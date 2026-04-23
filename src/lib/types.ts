@@ -39,7 +39,9 @@ export interface RateCard {
 export interface LineItem {
   id: string;
   role: Role;
-  days: number;
+  startWeek: number;
+  weeks: number;
+  daysPerWeek: number;
   dailyRate: number;
   expenses: number;
   travel: number;

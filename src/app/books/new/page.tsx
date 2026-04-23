@@ -15,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import EngagementTimeline from '@/components/engagement-timeline';
 
 export default function NewBookPage() {
   const router = useRouter();
@@ -48,18 +49,18 @@ export default function NewBookPage() {
     setLineItems([]);
   }
 
-  function handleRateCardChange(id: string) {
-    setRateCardId(id);
-    setLineItems([]);
-  }
-
   function addRole(role: string) {
     if (!role) return;
     const rate = selectedCard?.roles.find(r => r.role === role)?.dailyRate ?? 0;
+    const nextStart = lineItems.length > 0
+      ? Math.max(...lineItems.map(i => i.startWeek))
+      : 1;
     setLineItems(items => [...items, {
       id: crypto.randomUUID(),
       role: role as LineItem['role'],
-      days: 1,
+      startWeek: nextStart,
+      weeks: 4,
+      daysPerWeek: 5,
       dailyRate: rate,
       expenses: 0,
       travel: 0,
@@ -99,7 +100,7 @@ export default function NewBookPage() {
   }
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <Link href="/">
           <Button variant="ghost" size="icon">
@@ -120,19 +121,11 @@ export default function NewBookPage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Client Name</Label>
-                  <Input
-                    placeholder="Acme Corp"
-                    value={client}
-                    onChange={e => setClient(e.target.value)}
-                  />
+                  <Input placeholder="Acme Corp" value={client} onChange={e => setClient(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
                   <Label>Engagement Name</Label>
-                  <Input
-                    placeholder="Digital Transformation"
-                    value={engagement}
-                    onChange={e => setEngagement(e.target.value)}
-                  />
+                  <Input placeholder="Digital Transformation" value={engagement} onChange={e => setEngagement(e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -148,7 +141,7 @@ export default function NewBookPage() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>Rate Card</Label>
-                  <Select value={rateCardId} onValueChange={v => v && handleRateCardChange(v)}>
+                  <Select value={rateCardId} onValueChange={v => v && setRateCardId(v)}>
                     <SelectTrigger><SelectValue placeholder="Select rate card" /></SelectTrigger>
                     <SelectContent>
                       {rateCards.map(c => (
@@ -184,8 +177,8 @@ export default function NewBookPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_72px_100px_100px_100px_80px_32px] gap-2 px-1 mb-1">
-                    {['Role', 'Days', 'Rate/day', 'Expenses', 'Travel', 'Subtotal', ''].map(h => (
+                  <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Start', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                   </div>
@@ -223,26 +216,13 @@ export default function NewBookPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Discount %</Label>
-                  <Input
-                    type="number" min={0} max={100}
-                    value={discount || ''}
-                    onChange={e => setDiscount(Number(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" min={0} max={100} value={discount || ''} onChange={e => setDiscount(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Markup %</Label>
-                  <Input
-                    type="number" min={0}
-                    value={markup || ''}
-                    onChange={e => setMarkup(Number(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" min={0} value={markup || ''} onChange={e => setMarkup(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
                 </div>
               </div>
-
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
@@ -267,32 +247,24 @@ export default function NewBookPage() {
               </div>
             </CardContent>
           </Card>
-
           <div className="space-y-2">
-            <Button
-              className="w-full"
-              variant="outline"
-              onClick={() => handleSave('Draft')}
-              disabled={!canSave}
-            >
-              Save as Draft
-            </Button>
-            <Button
-              className="w-full"
-              onClick={() => handleSave('Final')}
-              disabled={!canSave}
-            >
-              Mark as Final
-            </Button>
+            <Button className="w-full" variant="outline" onClick={() => handleSave('Draft')} disabled={!canSave}>Save as Draft</Button>
+            <Button className="w-full" onClick={() => handleSave('Final')} disabled={!canSave}>Mark as Final</Button>
           </div>
-
           {!canSave && (
             <p className="text-xs text-gray-400 text-center leading-snug">
-              Fill client, engagement, and add at least one role to save
+              Fill client, engagement, and add at least one role
             </p>
           )}
         </div>
       </div>
+
+      {/* Full-width timeline */}
+      {lineItems.length > 0 && (
+        <div className="mt-6">
+          <EngagementTimeline lineItems={lineItems} />
+        </div>
+      )}
     </div>
   );
 }
@@ -310,22 +282,35 @@ function LineItemRow({
 }) {
   const sym = currency === 'EUR' ? '€' : '$';
   return (
-    <div className="grid grid-cols-[1fr_72px_100px_100px_100px_80px_32px] gap-2 items-center">
+    <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
       <div className="min-w-0">
-        <Badge variant="secondary" className="text-xs max-w-full truncate">{item.role}</Badge>
+        <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
       </div>
+      {/* Start week */}
+      <Input
+        type="number" min={1}
+        value={item.startWeek || ''}
+        onChange={e => onChange('startWeek', e.target.value)}
+        className="h-8 text-sm px-2 tabular-nums"
+      />
+      {/* Weeks */}
       <Input
         type="number" min={0}
-        value={item.days || ''}
-        onChange={e => onChange('days', e.target.value)}
+        value={item.weeks || ''}
+        onChange={e => onChange('weeks', e.target.value)}
         className="h-8 text-sm px-2 tabular-nums"
-        placeholder="1"
       />
+      {/* Days/week */}
+      <Input
+        type="number" min={1} max={5}
+        value={item.daysPerWeek || ''}
+        onChange={e => onChange('daysPerWeek', e.target.value)}
+        className="h-8 text-sm px-2 tabular-nums"
+      />
+      {/* Rate, Expenses, Travel */}
       {(['dailyRate', 'expenses', 'travel'] as const).map(field => (
         <div key={field} className="relative">
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
-            {sym}
-          </span>
+          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
           <Input
             type="number" min={0}
             value={item[field] || ''}
@@ -338,11 +323,7 @@ function LineItemRow({
       <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
         {formatCurrency(lineSubtotal(item), currency)}
       </span>
-      <Button
-        size="icon" variant="ghost"
-        onClick={onRemove}
-        className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50"
-      >
+      <Button size="icon" variant="ghost" onClick={onRemove} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
         <Trash2 className="h-3.5 w-3.5" />
       </Button>
     </div>

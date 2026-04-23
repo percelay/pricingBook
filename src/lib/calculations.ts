@@ -1,7 +1,11 @@
 import { LineItem } from './types';
 
+export function totalDays(item: LineItem): number {
+  return item.weeks * item.daysPerWeek;
+}
+
 export function lineSubtotal(item: LineItem): number {
-  return item.days * item.dailyRate + item.expenses + item.travel;
+  return totalDays(item) * item.dailyRate + item.expenses + item.travel;
 }
 
 export interface BookTotals {

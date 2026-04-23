@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText, TrendingUp, Users, Clock } from 'lucide-react';
+import { Plus, Search, FileText } from 'lucide-react';
 import { getPricingBooks } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { calcTotals, formatCurrency } from '@/lib/calculations';
@@ -32,32 +32,16 @@ export default function Dashboard() {
     return matchSearch && matchStatus && matchRegion;
   });
 
-  const drafts = books.filter(b => b.status === 'Draft').length;
-  const clients = new Set(books.map(b => b.client)).size;
-  const finalValue = books
-    .filter(b => b.status === 'Final')
-    .reduce((s, b) => s + calcTotals(b.lineItems, b.discount, b.markup).grandTotal, 0);
-
   return (
     <div className="p-8 max-w-7xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-gray-500 mt-1">Manage your client pricing books</p>
-        </div>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-gray-900">Pricing Books</h1>
         <Link href="/books/new">
           <Button>
             <Plus className="h-4 w-4 mr-2" />
             New Pricing Book
           </Button>
         </Link>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4 mb-8">
-        <StatCard icon={FileText} label="Total Books" value={books.length} color="blue" />
-        <StatCard icon={Clock} label="In Progress" value={drafts} color="yellow" />
-        <StatCard icon={Users} label="Clients" value={clients} color="green" />
-        <StatCard icon={TrendingUp} label="Finalized Value" value={formatCurrency(finalValue)} color="purple" />
       </div>
 
       <div className="flex gap-3 mb-6">
@@ -104,40 +88,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
-  );
-}
-
-function StatCard({
-  icon: Icon,
-  label,
-  value,
-  color,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value: string | number;
-  color: 'blue' | 'yellow' | 'green' | 'purple';
-}) {
-  const colorMap = {
-    blue: 'bg-blue-50 text-blue-600',
-    yellow: 'bg-amber-50 text-amber-600',
-    green: 'bg-emerald-50 text-emerald-600',
-    purple: 'bg-purple-50 text-purple-600',
-  };
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm text-gray-500 font-medium">{label}</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-          </div>
-          <div className={`p-3 rounded-xl ${colorMap[color]}`}>
-            <Icon className="h-5 w-5" />
-          </div>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
 

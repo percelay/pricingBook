@@ -1,6 +1,6 @@
 import * as XLSX from 'xlsx';
 import { PricingBook } from './types';
-import { lineSubtotal, calcTotals } from './calculations';
+import { lineSubtotal, calcTotals, totalDays } from './calculations';
 
 export function exportBookToExcel(book: PricingBook): void {
   const currency = book.region === 'France' ? 'EUR' : 'USD';
@@ -14,26 +14,29 @@ export function exportBookToExcel(book: PricingBook): void {
     ['Rate Card', book.baseRateCardName, '', 'Status', book.status],
     ['Date', new Date().toLocaleDateString()],
     [],
-    ['Role', 'Days', 'Daily Rate', 'Expenses', 'Travel', 'Subtotal'],
+    ['Role', 'Start Week', 'Weeks', 'Days/Week', 'Total Days', 'Daily Rate', 'Expenses', 'Travel', 'Subtotal'],
     ...book.lineItems.map(item => [
       item.role,
-      item.days,
+      item.startWeek,
+      item.weeks,
+      item.daysPerWeek,
+      totalDays(item),
       item.dailyRate,
       item.expenses,
       item.travel,
       lineSubtotal(item),
     ]),
     [],
-    ['', '', '', '', 'Subtotal', subtotal],
+    ['', '', '', '', '', '', '', 'Subtotal', subtotal],
   ];
 
   if (book.discount > 0) {
-    data.push(['', '', '', '', `Discount (${book.discount}%)`, -discountAmount]);
+    data.push(['', '', '', '', '', '', '', `Discount (${book.discount}%)`, -discountAmount]);
   }
   if (book.markup > 0) {
-    data.push(['', '', '', '', `Markup (${book.markup}%)`, markupAmount]);
+    data.push(['', '', '', '', '', '', '', `Markup (${book.markup}%)`, markupAmount]);
   }
-  data.push(['', '', '', '', 'GRAND TOTAL', grandTotal]);
+  data.push(['', '', '', '', '', '', '', 'GRAND TOTAL', grandTotal]);
 
   if (book.notes) {
     data.push([], ['Notes', book.notes]);

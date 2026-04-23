@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, History, Trash2, Check, Save, Plus } from 'lucide-react';
+import { ArrowLeft, Download, History, Trash2, Check, Save } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { PricingBook, LineItem, ROLES, CURRENCY_BY_REGION, RateCard } from '@/lib/types';
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
+import EngagementTimeline from '@/components/engagement-timeline';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -59,6 +60,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   function addRole(role: string) {
     if (!role || !book) return;
     const rate = rateCards.find(c => c.id === book.baseRateCardId)?.roles.find(r => r.role === role)?.dailyRate ?? 0;
+    const nextStart = book.lineItems.length > 0
+      ? Math.max(...book.lineItems.map(i => i.startWeek))
+      : 1;
     setBook(b => {
       if (!b) return b;
       return {
@@ -66,7 +70,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         lineItems: [...b.lineItems, {
           id: crypto.randomUUID(),
           role: role as LineItem['role'],
-          days: 1,
+          startWeek: nextStart,
+          weeks: 4,
+          daysPerWeek: 5,
           dailyRate: rate,
           expenses: 0,
           travel: 0,
@@ -83,7 +89,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
   function handleSave(overrideStatus?: 'Draft' | 'Final') {
     if (!book) return;
-    const nextVersion = book.versions.length + 1;
     const status = overrideStatus ?? book.status;
     const updated: PricingBook = {
       ...book,
@@ -92,19 +97,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
       versions: [
         ...book.versions,
         {
-          version: nextVersion,
+          version: book.versions.length + 1,
           savedAt: new Date().toISOString(),
           snapshot: {
-            client: book.client,
-            engagement: book.engagement,
-            region: book.region,
-            baseRateCardId: book.baseRateCardId,
-            baseRateCardName: book.baseRateCardName,
-            status,
-            discount: book.discount,
-            markup: book.markup,
-            lineItems: book.lineItems,
-            notes: book.notes,
+            client: book.client, engagement: book.engagement, region: book.region,
+            baseRateCardId: book.baseRateCardId, baseRateCardName: book.baseRateCardName,
+            status, discount: book.discount, markup: book.markup,
+            lineItems: book.lineItems, notes: book.notes,
           },
         },
       ],
@@ -126,8 +125,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     setDirty(true);
   }
 
+  const sym = currency === 'EUR' ? '€' : '$';
+
   return (
-    <div className="p-8 max-w-5xl mx-auto">
+    <div className="p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-3">
@@ -139,9 +140,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           <div>
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">{book.client}</h1>
-              <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>
-                {book.status}
-              </Badge>
+              <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>{book.status}</Badge>
               <Badge variant="outline" className="font-normal">
                 {book.region === 'France' ? '🇫🇷' : '🇺🇸'} {book.region}
               </Badge>
@@ -152,12 +151,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {dirty && (
-            <span className="text-xs text-amber-500 font-medium">Unsaved</span>
-          )}
+          {dirty && <span className="text-xs text-amber-500 font-medium">Unsaved</span>}
           <Button variant="outline" size="sm" onClick={() => exportBookToExcel(book)}>
-            <Download className="h-4 w-4 mr-1.5" />
-            Export
+            <Download className="h-4 w-4 mr-1.5" />Export
           </Button>
           <Sheet>
             <SheetTrigger render={<Button variant="outline" size="sm" />}>
@@ -165,9 +161,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               History {book.versions.length > 0 && `(${book.versions.length})`}
             </SheetTrigger>
             <SheetContent className="w-80">
-              <SheetHeader>
-                <SheetTitle>Version History</SheetTitle>
-              </SheetHeader>
+              <SheetHeader><SheetTitle>Version History</SheetTitle></SheetHeader>
               <div className="mt-6 space-y-3 overflow-y-auto">
                 {book.versions.length === 0 ? (
                   <p className="text-sm text-gray-400 text-center py-8">
@@ -180,27 +174,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                       <div key={v.version} className="border rounded-lg p-4 space-y-2.5">
                         <div className="flex items-center justify-between">
                           <span className="font-semibold text-sm">v{v.version}</span>
-                          <Badge
-                            variant={v.snapshot.status === 'Final' ? 'default' : 'secondary'}
-                            className="text-xs"
-                          >
+                          <Badge variant={v.snapshot.status === 'Final' ? 'default' : 'secondary'} className="text-xs">
                             {v.snapshot.status}
                           </Badge>
                         </div>
                         <p className="text-xs text-gray-400">
-                          {new Date(v.savedAt).toLocaleString('en-US', {
-                            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit',
-                          })}
+                          {new Date(v.savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                         <p className="text-base font-bold text-gray-800 tabular-nums">
                           {formatCurrency(vTotal, currency)}
                         </p>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="w-full h-7 text-xs"
-                          onClick={() => restoreVersion(v)}
-                        >
+                        <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => restoreVersion(v)}>
                           Restore this version
                         </Button>
                       </div>
@@ -211,21 +195,14 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </SheetContent>
           </Sheet>
           <Button variant="outline" size="sm" onClick={() => handleSave()}>
-            <Save className="h-4 w-4 mr-1.5" />
-            Save
+            <Save className="h-4 w-4 mr-1.5" />Save
           </Button>
           {book.status === 'Draft' && (
             <Button size="sm" onClick={() => handleSave('Final')}>
-              <Check className="h-4 w-4 mr-1.5" />
-              Mark Final
+              <Check className="h-4 w-4 mr-1.5" />Mark Final
             </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleDelete}
-            className="text-red-400 hover:text-red-600 hover:bg-red-50"
-          >
+          <Button variant="ghost" size="icon" onClick={handleDelete} className="text-red-400 hover:text-red-600 hover:bg-red-50">
             <Trash2 className="h-4 w-4" />
           </Button>
         </div>
@@ -243,9 +220,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     <SelectValue placeholder="+ Add role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES.map(r => (
-                      <SelectItem key={r} value={r}>{r}</SelectItem>
-                    ))}
+                    {ROLES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -257,45 +232,52 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_72px_100px_100px_100px_80px_32px] gap-2 px-1 mb-1">
-                    {['Role', 'Days', 'Rate/day', 'Expenses', 'Travel', 'Subtotal', ''].map(h => (
+                  <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Start', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                   </div>
                   {book.lineItems.map(item => (
-                    <div key={item.id} className="grid grid-cols-[1fr_72px_100px_100px_100px_80px_32px] gap-2 items-center">
+                    <div key={item.id} className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
                       <span className="text-sm font-medium text-gray-800 truncate">{item.role}</span>
+                      {/* Start week */}
                       <Input
-                        type="number" min={0}
-                        value={item.days || ''}
-                        onChange={e => updateLineItem(item.id, 'days', e.target.value)}
+                        type="number" min={1}
+                        value={item.startWeek || ''}
+                        onChange={e => updateLineItem(item.id, 'startWeek', e.target.value)}
                         className="h-8 text-sm px-2 tabular-nums"
                       />
-                      {(['dailyRate', 'expenses', 'travel'] as const).map(field => {
-                        const sym = currency === 'EUR' ? '€' : '$';
-                        return (
-                          <div key={field} className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">
-                              {sym}
-                            </span>
-                            <Input
-                              type="number" min={0}
-                              value={item[field] || ''}
-                              onChange={e => updateLineItem(item.id, field, e.target.value)}
-                              className="h-8 text-sm pl-5 pr-1 tabular-nums"
-                              placeholder="0"
-                            />
-                          </div>
-                        );
-                      })}
+                      {/* Weeks */}
+                      <Input
+                        type="number" min={0}
+                        value={item.weeks || ''}
+                        onChange={e => updateLineItem(item.id, 'weeks', e.target.value)}
+                        className="h-8 text-sm px-2 tabular-nums"
+                      />
+                      {/* Days/week */}
+                      <Input
+                        type="number" min={1} max={5}
+                        value={item.daysPerWeek || ''}
+                        onChange={e => updateLineItem(item.id, 'daysPerWeek', e.target.value)}
+                        className="h-8 text-sm px-2 tabular-nums"
+                      />
+                      {/* Rate, Expenses, Travel */}
+                      {(['dailyRate', 'expenses', 'travel'] as const).map(field => (
+                        <div key={field} className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                          <Input
+                            type="number" min={0}
+                            value={item[field] || ''}
+                            onChange={e => updateLineItem(item.id, field, e.target.value)}
+                            className="h-8 text-sm pl-5 pr-1 tabular-nums"
+                            placeholder="0"
+                          />
+                        </div>
+                      ))}
                       <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
                         {formatCurrency(lineSubtotal(item), currency)}
                       </span>
-                      <Button
-                        size="icon" variant="ghost"
-                        onClick={() => removeLineItem(item.id)}
-                        className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50"
-                      >
+                      <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -309,12 +291,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
             <CardContent>
-              <Textarea
-                value={book.notes}
-                onChange={e => patch('notes', e.target.value)}
-                rows={4}
-                placeholder="Assumptions, exclusions, context..."
-              />
+              <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={4} placeholder="Assumptions, exclusions, context..." />
             </CardContent>
           </Card>
         </div>
@@ -327,26 +304,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Discount %</Label>
-                  <Input
-                    type="number" min={0} max={100}
-                    value={book.discount || ''}
-                    onChange={e => patch('discount', Number(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" min={0} max={100} value={book.discount || ''} onChange={e => patch('discount', Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Markup %</Label>
-                  <Input
-                    type="number" min={0}
-                    value={book.markup || ''}
-                    onChange={e => patch('markup', Number(e.target.value) || 0)}
-                    placeholder="0"
-                    className="h-8 text-sm"
-                  />
+                  <Input type="number" min={0} value={book.markup || ''} onChange={e => patch('markup', Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
                 </div>
               </div>
-
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
@@ -375,9 +339,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           {book.lineItems.length > 0 && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                  Breakdown by Role
-                </CardTitle>
+                <CardTitle className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Breakdown by Role</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2">
                 {book.lineItems.map(item => (
@@ -401,6 +363,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           </Card>
         </div>
       </div>
+
+      {/* Full-width timeline */}
+      {book.lineItems.length > 0 && (
+        <div className="mt-6">
+          <EngagementTimeline lineItems={book.lineItems} />
+        </div>
+      )}
     </div>
   );
 }
