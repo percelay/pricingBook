@@ -8,7 +8,7 @@ const ROLE_COLORS: Record<Role, { bar: string; dot: string; label: string }> = {
   'Partner':           { bar: 'bg-black',        dot: 'bg-black',        label: 'text-black' },
   'Senior Manager':    { bar: 'bg-zinc-700',     dot: 'bg-zinc-700',     label: 'text-zinc-700' },
   'Manager':           { bar: 'bg-zinc-500',     dot: 'bg-zinc-500',     label: 'text-zinc-500' },
-  'Senior Consultant': { bar: 'bg-[#E35336]',   dot: 'bg-[#E35336]',   label: 'text-[#E35336]' },
+  'Senior Consultant': { bar: 'bg-[#77BB91]',   dot: 'bg-[#77BB91]',   label: 'text-[#77BB91]' },
   'Consultant':        { bar: 'bg-zinc-300',     dot: 'bg-zinc-300',     label: 'text-zinc-400' },
 };
 
@@ -83,7 +83,7 @@ export default function EngagementTimeline({ lineItems }: { lineItems: LineItem[
                         width: `calc(${widthPct}% - 4px)`,
                       }}
                     >
-                      <span className={`text-xs font-medium px-2.5 whitespace-nowrap overflow-hidden ${item.role === 'Consultant' ? 'text-black' : 'text-white'}`}>
+                      <span className={`text-xs font-medium px-2.5 whitespace-nowrap overflow-hidden ${item.role === 'Consultant' || item.role === 'Senior Consultant' ? 'text-black' : 'text-white'}`}>
                         {item.weeks}w · {item.daysPerWeek}d/wk
                         {widthPct > 20 && ` = ${days}d`}
                       </span>

@@ -60,9 +60,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   function addRole(role: string) {
     if (!role || !book) return;
     const rate = rateCards.find(c => c.id === book.baseRateCardId)?.roles.find(r => r.role === role)?.dailyRate ?? 0;
-    const nextStart = book.lineItems.length > 0
-      ? Math.max(...book.lineItems.map(i => i.startWeek))
-      : 1;
     setBook(b => {
       if (!b) return b;
       return {
@@ -70,7 +67,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         lineItems: [...b.lineItems, {
           id: crypto.randomUUID(),
           role: role as LineItem['role'],
-          startWeek: nextStart,
+          startWeek: 1,
           weeks: 4,
           daysPerWeek: 5,
           dailyRate: rate,
@@ -151,7 +148,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {dirty && <span className="text-xs text-[#E35336] font-medium">Unsaved</span>}
+          {dirty && <span className="text-xs text-gray-400 font-medium">Unsaved</span>}
           <Button variant="outline" size="sm" onClick={() => exportBookToExcel(book)}>
             <Download className="h-4 w-4 mr-1.5" />Export
           </Button>
@@ -232,21 +229,14 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Start', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
+                  <div className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                   </div>
                   {book.lineItems.map(item => (
-                    <div key={item.id} className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
+                    <div key={item.id} className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
                       <span className="text-sm font-medium text-gray-800 truncate">{item.role}</span>
-                      {/* Start week */}
-                      <Input
-                        type="number" min={1}
-                        value={item.startWeek || ''}
-                        onChange={e => updateLineItem(item.id, 'startWeek', e.target.value)}
-                        className="h-8 text-sm px-2 tabular-nums"
-                      />
                       {/* Weeks */}
                       <Input
                         type="number" min={0}
@@ -317,7 +307,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                   <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {book.discount > 0 && (
-                  <div className="flex justify-between text-[#E35336]">
+                  <div className="flex justify-between text-gray-500">
                     <span>Discount ({book.discount}%)</span>
                     <span className="tabular-nums">-{formatCurrency(totals.discountAmount, currency)}</span>
                   </div>

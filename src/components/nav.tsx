@@ -18,7 +18,7 @@ export default function Nav() {
     <aside className="w-56 shrink-0 bg-black text-white flex flex-col h-full">
       <div className="px-5 py-6 border-b border-[#2a2a2a]">
         <div className="flex items-center gap-2.5">
-          <BookOpen className="h-5 w-5 text-[#E35336]" />
+          <BookOpen className="h-5 w-5 text-[#77BB91]" />
           <span className="font-semibold text-base tracking-tight">Pricing Book</span>
         </div>
       </div>
@@ -31,7 +31,7 @@ export default function Nav() {
             className={cn(
               'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors',
               pathname === href
-                ? 'bg-[#E35336] text-white'
+                ? 'bg-[#77BB91] text-white'
                 : 'text-zinc-400 hover:bg-zinc-900 hover:text-white'
             )}
           >
@@ -43,7 +43,7 @@ export default function Nav() {
 
       <div className="p-3 border-t border-[#2a2a2a]">
         <Link href="/books/new">
-          <Button className="w-full bg-[#E35336] hover:bg-[#c94a2e] text-white text-sm">
+          <Button className="w-full bg-[#77BB91] hover:bg-[#5fa07a] text-white text-sm">
             <Plus className="h-4 w-4 mr-1.5" />
             New Pricing Book
           </Button>

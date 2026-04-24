@@ -52,13 +52,10 @@ export default function NewBookPage() {
   function addRole(role: string) {
     if (!role) return;
     const rate = selectedCard?.roles.find(r => r.role === role)?.dailyRate ?? 0;
-    const nextStart = lineItems.length > 0
-      ? Math.max(...lineItems.map(i => i.startWeek))
-      : 1;
     setLineItems(items => [...items, {
       id: crypto.randomUUID(),
       role: role as LineItem['role'],
-      startWeek: nextStart,
+      startWeek: 1,
       weeks: 4,
       daysPerWeek: 5,
       dailyRate: rate,
@@ -177,8 +174,8 @@ export default function NewBookPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Start', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
+                  <div className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                   </div>
@@ -229,7 +226,7 @@ export default function NewBookPage() {
                   <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {discount > 0 && (
-                  <div className="flex justify-between text-[#E35336]">
+                  <div className="flex justify-between text-gray-500">
                     <span>Discount ({discount}%)</span>
                     <span className="tabular-nums">-{formatCurrency(totals.discountAmount, currency)}</span>
                   </div>
@@ -282,17 +279,10 @@ function LineItemRow({
 }) {
   const sym = currency === 'EUR' ? '€' : '$';
   return (
-    <div className="grid grid-cols-[1fr_50px_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
+    <div className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
       <div className="min-w-0">
         <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
       </div>
-      {/* Start week */}
-      <Input
-        type="number" min={1}
-        value={item.startWeek || ''}
-        onChange={e => onChange('startWeek', e.target.value)}
-        className="h-8 text-sm px-2 tabular-nums"
-      />
       {/* Weeks */}
       <Input
         type="number" min={0}
