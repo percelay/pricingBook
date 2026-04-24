@@ -151,7 +151,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          {dirty && <span className="text-xs text-amber-500 font-medium">Unsaved</span>}
+          {dirty && <span className="text-xs text-[#E35336] font-medium">Unsaved</span>}
           <Button variant="outline" size="sm" onClick={() => exportBookToExcel(book)}>
             <Download className="h-4 w-4 mr-1.5" />Export
           </Button>
@@ -266,7 +266,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         <div key={field} className="relative">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
                           <Input
-                            type="number" min={0}
+                            type="number" min={0} step={100}
                             value={item[field] || ''}
                             onChange={e => updateLineItem(item.id, field, e.target.value)}
                             className="h-8 text-sm pl-5 pr-1 tabular-nums"
@@ -317,13 +317,13 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                   <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {book.discount > 0 && (
-                  <div className="flex justify-between text-red-500">
+                  <div className="flex justify-between text-[#E35336]">
                     <span>Discount ({book.discount}%)</span>
                     <span className="tabular-nums">-{formatCurrency(totals.discountAmount, currency)}</span>
                   </div>
                 )}
                 {book.markup > 0 && (
-                  <div className="flex justify-between text-blue-600">
+                  <div className="flex justify-between text-gray-700">
                     <span>Markup ({book.markup}%)</span>
                     <span className="tabular-nums">+{formatCurrency(totals.markupAmount, currency)}</span>
                   </div>

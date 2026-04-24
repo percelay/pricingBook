@@ -5,11 +5,11 @@ import { totalDays } from '@/lib/calculations';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 const ROLE_COLORS: Record<Role, { bar: string; dot: string; label: string }> = {
-  'Partner':           { bar: 'bg-slate-700',   dot: 'bg-slate-700',   label: 'text-slate-700' },
-  'Senior Manager':    { bar: 'bg-blue-600',    dot: 'bg-blue-600',    label: 'text-blue-600' },
-  'Manager':           { bar: 'bg-emerald-600', dot: 'bg-emerald-600', label: 'text-emerald-600' },
-  'Senior Consultant': { bar: 'bg-amber-500',   dot: 'bg-amber-500',   label: 'text-amber-600' },
-  'Consultant':        { bar: 'bg-violet-600',  dot: 'bg-violet-600',  label: 'text-violet-600' },
+  'Partner':           { bar: 'bg-black',        dot: 'bg-black',        label: 'text-black' },
+  'Senior Manager':    { bar: 'bg-zinc-700',     dot: 'bg-zinc-700',     label: 'text-zinc-700' },
+  'Manager':           { bar: 'bg-zinc-500',     dot: 'bg-zinc-500',     label: 'text-zinc-500' },
+  'Senior Consultant': { bar: 'bg-[#E35336]',   dot: 'bg-[#E35336]',   label: 'text-[#E35336]' },
+  'Consultant':        { bar: 'bg-zinc-300',     dot: 'bg-zinc-300',     label: 'text-zinc-400' },
 };
 
 export default function EngagementTimeline({ lineItems }: { lineItems: LineItem[] }) {
@@ -77,13 +77,13 @@ export default function EngagementTimeline({ lineItems }: { lineItems: LineItem[
                   {/* Bar */}
                   {item.weeks > 0 && (
                     <div
-                      className={`absolute inset-y-1.5 rounded ${colors.bar} flex items-center overflow-hidden`}
+                      className={`absolute inset-y-1.5 ${colors.bar} flex items-center overflow-hidden`}
                       style={{
                         left: `calc(${startPct}% + 2px)`,
                         width: `calc(${widthPct}% - 4px)`,
                       }}
                     >
-                      <span className="text-white text-xs font-medium px-2.5 whitespace-nowrap overflow-hidden">
+                      <span className={`text-xs font-medium px-2.5 whitespace-nowrap overflow-hidden ${item.role === 'Consultant' ? 'text-black' : 'text-white'}`}>
                         {item.weeks}w · {item.daysPerWeek}d/wk
                         {widthPct > 20 && ` = ${days}d`}
                       </span>

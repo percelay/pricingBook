@@ -229,13 +229,13 @@ export default function NewBookPage() {
                   <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
                 </div>
                 {discount > 0 && (
-                  <div className="flex justify-between text-red-500">
+                  <div className="flex justify-between text-[#E35336]">
                     <span>Discount ({discount}%)</span>
                     <span className="tabular-nums">-{formatCurrency(totals.discountAmount, currency)}</span>
                   </div>
                 )}
                 {markup > 0 && (
-                  <div className="flex justify-between text-blue-600">
+                  <div className="flex justify-between text-gray-700">
                     <span>Markup ({markup}%)</span>
                     <span className="tabular-nums">+{formatCurrency(totals.markupAmount, currency)}</span>
                   </div>
@@ -312,7 +312,7 @@ function LineItemRow({
         <div key={field} className="relative">
           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
           <Input
-            type="number" min={0}
+            type="number" min={0} step={100}
             value={item[field] || ''}
             onChange={e => onChange(field, e.target.value)}
             className="h-8 text-sm pl-5 pr-1 tabular-nums"
