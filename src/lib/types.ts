@@ -3,7 +3,8 @@ export type Role =
   | 'Senior Consultant'
   | 'Manager'
   | 'Senior Manager'
-  | 'Partner';
+  | 'Partner'
+  | 'Contractor';
 
 export const ROLES: Role[] = [
   'Consultant',
@@ -11,11 +12,16 @@ export const ROLES: Role[] = [
   'Manager',
   'Senior Manager',
   'Partner',
+  'Contractor',
 ];
 
 export type Region = 'US' | 'France';
 export type Currency = 'USD' | 'EUR';
 export type BookStatus = 'Draft' | 'Final';
+export type RateMode = 'daily' | 'hourly';
+
+export const HOURS_PER_DAY = 8;
+export const TARGET_MARGIN_PCT = 30;
 
 export const CURRENCY_BY_REGION: Record<Region, Currency> = {
   US: 'USD',
@@ -25,6 +31,7 @@ export const CURRENCY_BY_REGION: Record<Region, Currency> = {
 export interface RoleRate {
   role: Role;
   dailyRate: number;
+  dailyCost: number;
 }
 
 export interface RateCard {
@@ -39,12 +46,10 @@ export interface RateCard {
 export interface LineItem {
   id: string;
   role: Role;
-  startWeek: number;
-  weeks: number;
-  daysPerWeek: number;
+  name: string;
+  days: number[];
   dailyRate: number;
-  expenses: number;
-  travel: number;
+  dailyCost: number;
 }
 
 export interface PricingBookData {
@@ -56,6 +61,7 @@ export interface PricingBookData {
   status: BookStatus;
   discount: number;
   markup: number;
+  tePercent: number;
   lineItems: LineItem[];
   notes: string;
 }

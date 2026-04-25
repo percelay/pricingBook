@@ -3,11 +3,15 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Trash2 } from 'lucide-react';
+import { ArrowLeft, Trash2, TrendingUp, Target } from 'lucide-react';
 import { getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, LineItem, ROLES, Region, CURRENCY_BY_REGION, PricingBook } from '@/lib/types';
-import { calcTotals, formatCurrency, lineSubtotal } from '@/lib/calculations';
+import { RateCard, LineItem, ROLES, Region, CURRENCY_BY_REGION, PricingBook, TARGET_MARGIN_PCT } from '@/lib/types';
+import {
+  calcTotals, formatCurrency, lineSubtotal, toDisplayRate, fromInputRate,
+  rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays,
+} from '@/lib/calculations';
+import { useRateMode } from '@/lib/rate-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,10 +19,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import EngagementTimeline from '@/components/engagement-timeline';
+import EditableTimeline from '@/components/engagement-timeline';
 
 export default function NewBookPage() {
   const router = useRouter();
+  const { mode } = useRateMode();
   const [rateCards, setRateCards] = useState<RateCard[]>([]);
   const [client, setClient] = useState('');
   const [engagement, setEngagement] = useState('');
@@ -26,6 +31,7 @@ export default function NewBookPage() {
   const [rateCardId, setRateCardId] = useState('');
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
+  const [tePercent, setTePercent] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [notes, setNotes] = useState('');
 
@@ -39,8 +45,10 @@ export default function NewBookPage() {
 
   const selectedCard = rateCards.find(c => c.id === rateCardId);
   const currency = CURRENCY_BY_REGION[region];
-  const totals = calcTotals(lineItems, discount, markup);
+  const totals = calcTotals(lineItems, discount, markup, tePercent);
   const canSave = client.trim() && engagement.trim() && lineItems.length > 0;
+  const unit = rateUnit(mode);
+  const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
 
   function handleRegionChange(r: Region) {
     setRegion(r);
@@ -51,22 +59,47 @@ export default function NewBookPage() {
 
   function addRole(role: string) {
     if (!role) return;
-    const rate = selectedCard?.roles.find(r => r.role === role)?.dailyRate ?? 0;
+    const roleRate = selectedCard?.roles.find(r => r.role === role);
     setLineItems(items => [...items, {
       id: crypto.randomUUID(),
       role: role as LineItem['role'],
-      startWeek: 1,
-      weeks: 4,
-      daysPerWeek: 5,
-      dailyRate: rate,
-      expenses: 0,
-      travel: 0,
+      name: '',
+      days: uniformDays(4, 5),
+      dailyRate: roleRate?.dailyRate ?? 0,
+      dailyCost: roleRate?.dailyCost ?? 0,
     }]);
   }
 
-  function updateItem(id: string, field: keyof LineItem, value: string) {
+  function updateField<K extends keyof LineItem>(id: string, field: K, value: LineItem[K]) {
     setLineItems(items =>
-      items.map(item => item.id === id ? { ...item, [field]: Number(value) || 0 } : item)
+      items.map(item => item.id === id ? { ...item, [field]: value } : item)
+    );
+  }
+
+  function updateRate(id: string, field: 'dailyRate' | 'dailyCost', value: string) {
+    const num = Number(value) || 0;
+    updateField(id, field, fromInputRate(num, mode));
+  }
+
+  function updateWeeks(id: string, value: string) {
+    const newLen = Math.max(0, Math.floor(Number(value) || 0));
+    setLineItems(items =>
+      items.map(item => {
+        if (item.id !== id) return item;
+        const fillVal = isUniform(item.days) && item.days.length > 0 ? item.days[0] : 5;
+        return { ...item, days: resizeDays(item.days, newLen, fillVal) };
+      })
+    );
+  }
+
+  function updateDpw(id: string, value: string) {
+    const dpw = Math.max(0, Number(value) || 0);
+    setLineItems(items =>
+      items.map(item => {
+        if (item.id !== id) return item;
+        const len = item.days.length === 0 ? 4 : item.days.length;
+        return { ...item, days: uniformDays(len, dpw) };
+      })
     );
   }
 
@@ -86,6 +119,7 @@ export default function NewBookPage() {
       status,
       discount,
       markup,
+      tePercent,
       lineItems,
       notes,
       versions: [],
@@ -95,6 +129,8 @@ export default function NewBookPage() {
     upsertPricingBook(book);
     router.push(`/books/${book.id}`);
   }
+
+  const sym = currency === 'EUR' ? '€' : '$';
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -139,9 +175,13 @@ export default function NewBookPage() {
                 <div className="space-y-1.5">
                   <Label>Rate Card</Label>
                   <Select value={rateCardId} onValueChange={v => v && setRateCardId(v)}>
-                    <SelectTrigger><SelectValue placeholder="Select rate card" /></SelectTrigger>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select rate card">
+                        {(v: string) => rateCards.find(c => c.id === v)?.name ?? 'Select rate card'}
+                      </SelectValue>
+                    </SelectTrigger>
                     <SelectContent>
-                      {rateCards.map(c => (
+                      {rateCards.filter(c => c.region === region).map(c => (
                         <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -174,20 +214,59 @@ export default function NewBookPage() {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Weeks', 'd/wk', 'Rate/day', 'Expenses', 'Travel', 'Total', ''].map(h => (
+                  <div className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                   </div>
-                  {lineItems.map(item => (
-                    <LineItemRow
-                      key={item.id}
-                      item={item}
-                      currency={currency}
-                      onChange={(field, val) => updateItem(item.id, field, val)}
-                      onRemove={() => removeItem(item.id)}
-                    />
-                  ))}
+                  {lineItems.map(item => {
+                    const sub = lineSubtotal(item);
+                    const uniform = isUniform(item.days);
+                    const avgDpw = averageDaysPerWeek(item.days);
+                    return (
+                      <div key={item.id} className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 items-center">
+                        <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
+                        <Input
+                          placeholder="Consultant name"
+                          value={item.name}
+                          onChange={e => updateField(item.id, 'name', e.target.value)}
+                          className="h-8 text-sm"
+                        />
+                        <Input
+                          type="number" min={0}
+                          value={item.days.length || ''}
+                          onChange={e => updateWeeks(item.id, e.target.value)}
+                          className="h-8 text-sm px-2 tabular-nums"
+                        />
+                        <Input
+                          type="number" min={0} max={7} step={0.5}
+                          value={uniform && item.days.length > 0 ? item.days[0] : ''}
+                          placeholder={uniform ? '' : avgDpw.toFixed(1)}
+                          onChange={e => updateDpw(item.id, e.target.value)}
+                          title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
+                          className="h-8 text-sm px-2 tabular-nums"
+                        />
+                        {(['dailyRate', 'dailyCost'] as const).map(field => (
+                          <div key={field} className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                            <Input
+                              type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                              value={toDisplayRate(item[field], mode) || ''}
+                              onChange={e => updateRate(item.id, field, e.target.value)}
+                              className="h-8 text-sm pl-5 pr-1 tabular-nums"
+                              placeholder="0"
+                            />
+                          </div>
+                        ))}
+                        <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
+                          {formatCurrency(sub, currency)}
+                        </span>
+                        <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
@@ -210,14 +289,18 @@ export default function NewBookPage() {
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Discount %</Label>
-                  <Input type="number" min={0} max={100} value={discount || ''} onChange={e => setDiscount(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
+                  <Input type="number" min={0} max={100} value={discount || ''} onChange={e => setDiscount(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Markup %</Label>
-                  <Input type="number" min={0} value={markup || ''} onChange={e => setMarkup(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm" />
+                  <Input type="number" min={0} value={markup || ''} onChange={e => setMarkup(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">T&amp;E %</Label>
+                  <Input type="number" min={0} value={tePercent || ''} onChange={e => setTePercent(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
                 </div>
               </div>
               <div className="border-t pt-3 space-y-2 text-sm">
@@ -237,6 +320,12 @@ export default function NewBookPage() {
                     <span className="tabular-nums">+{formatCurrency(totals.markupAmount, currency)}</span>
                   </div>
                 )}
+                {tePercent > 0 && (
+                  <div className="flex justify-between text-gray-700">
+                    <span>T&amp;E ({tePercent}%)</span>
+                    <span className="tabular-nums">+{formatCurrency(totals.teAmount, currency)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between font-bold text-gray-900 text-base pt-1.5 border-t">
                   <span>Total</span>
                   <span className="tabular-nums">{formatCurrency(totals.grandTotal, currency)}</span>
@@ -244,6 +333,43 @@ export default function NewBookPage() {
               </div>
             </CardContent>
           </Card>
+
+          {lineItems.length > 0 && (
+            <Card className="bg-zinc-50 border-zinc-200">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                  <TrendingUp className="h-4 w-4 text-[#5fa07a]" />
+                  Profitability
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between text-gray-500">
+                  <span>Net Fees</span>
+                  <span className="tabular-nums">{formatCurrency(totals.afterMarkup, currency)}</span>
+                </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>Internal Cost</span>
+                  <span className="tabular-nums">-{formatCurrency(totals.totalCost, currency)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-gray-900 pt-1.5 border-t border-zinc-200">
+                  <span>Gross Margin</span>
+                  <span className="tabular-nums">{formatCurrency(totals.grossMargin, currency)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-gray-400 flex items-center gap-1">
+                    <Target className="h-3 w-3" /> Target {TARGET_MARGIN_PCT}%
+                  </span>
+                  <span className={`tabular-nums text-base font-bold ${aboveTarget ? 'text-[#5fa07a]' : 'text-red-500'}`}>
+                    {totals.grossMarginPct.toFixed(1)}%
+                  </span>
+                </div>
+                <div className={`text-[11px] text-right font-medium ${aboveTarget ? 'text-[#5fa07a]' : 'text-red-500'}`}>
+                  {aboveTarget ? '+' : ''}{(totals.grossMarginPct - TARGET_MARGIN_PCT).toFixed(1)} pts vs target
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="space-y-2">
             <Button className="w-full" variant="outline" onClick={() => handleSave('Draft')} disabled={!canSave}>Save as Draft</Button>
             <Button className="w-full" onClick={() => handleSave('Final')} disabled={!canSave}>Mark as Final</Button>
@@ -256,66 +382,14 @@ export default function NewBookPage() {
         </div>
       </div>
 
-      {/* Full-width timeline */}
       {lineItems.length > 0 && (
         <div className="mt-6">
-          <EngagementTimeline lineItems={lineItems} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function LineItemRow({
-  item,
-  currency,
-  onChange,
-  onRemove,
-}: {
-  item: LineItem;
-  currency: string;
-  onChange: (field: keyof LineItem, value: string) => void;
-  onRemove: () => void;
-}) {
-  const sym = currency === 'EUR' ? '€' : '$';
-  return (
-    <div className="grid grid-cols-[1fr_58px_56px_88px_88px_88px_76px_28px] gap-2 items-center">
-      <div className="min-w-0">
-        <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
-      </div>
-      {/* Weeks */}
-      <Input
-        type="number" min={0}
-        value={item.weeks || ''}
-        onChange={e => onChange('weeks', e.target.value)}
-        className="h-8 text-sm px-2 tabular-nums"
-      />
-      {/* Days/week */}
-      <Input
-        type="number" min={1} max={5}
-        value={item.daysPerWeek || ''}
-        onChange={e => onChange('daysPerWeek', e.target.value)}
-        className="h-8 text-sm px-2 tabular-nums"
-      />
-      {/* Rate, Expenses, Travel */}
-      {(['dailyRate', 'expenses', 'travel'] as const).map(field => (
-        <div key={field} className="relative">
-          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
-          <Input
-            type="number" min={0} step={100}
-            value={item[field] || ''}
-            onChange={e => onChange(field, e.target.value)}
-            className="h-8 text-sm pl-5 pr-1 tabular-nums"
-            placeholder="0"
+          <EditableTimeline
+            lineItems={lineItems}
+            onChangeDays={(id, days) => updateField(id, 'days', days)}
           />
         </div>
-      ))}
-      <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
-        {formatCurrency(lineSubtotal(item), currency)}
-      </span>
-      <Button size="icon" variant="ghost" onClick={onRemove} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
-        <Trash2 className="h-3.5 w-3.5" />
-      </Button>
+      )}
     </div>
   );
 }

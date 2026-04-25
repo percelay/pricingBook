@@ -1,45 +1,111 @@
 import { RateCard, PricingBook } from './types';
-import { getRateCards, upsertRateCard, getPricingBooks, upsertPricingBook } from './store';
+import { getRateCards, upsertRateCard, getPricingBooks, upsertPricingBook, ensureSchema } from './store';
+import { uniformDays } from './calculations';
 
 export function seedDemoData(): void {
+  ensureSchema();
   if (getRateCards().length > 0) return;
 
   const now = new Date().toISOString();
 
-  const usCard: RateCard = {
-    id: 'rc-us-2025',
-    name: 'US Standard 2025',
-    region: 'US',
-    currency: 'USD',
-    roles: [
-      { role: 'Consultant', dailyRate: 1500 },
-      { role: 'Senior Consultant', dailyRate: 2200 },
-      { role: 'Manager', dailyRate: 3000 },
-      { role: 'Senior Manager', dailyRate: 4200 },
-      { role: 'Partner', dailyRate: 6500 },
-    ],
-    createdAt: now,
-  };
+  const cards: RateCard[] = [
+    {
+      id: 'rc-us-2025',
+      name: 'US Standard 2025',
+      region: 'US',
+      currency: 'USD',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1500, dailyCost: 520 },
+        { role: 'Senior Consultant', dailyRate: 2200, dailyCost: 780 },
+        { role: 'Manager',           dailyRate: 3000, dailyCost: 1050 },
+        { role: 'Senior Manager',    dailyRate: 4200, dailyCost: 1500 },
+        { role: 'Partner',           dailyRate: 6500, dailyCost: 2300 },
+        { role: 'Contractor',        dailyRate: 1200, dailyCost: 1000 },
+      ],
+      createdAt: now,
+    },
+    {
+      id: 'rc-us-acme',
+      name: 'Acme Corp — Premium 2025',
+      region: 'US',
+      currency: 'USD',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1700, dailyCost: 520 },
+        { role: 'Senior Consultant', dailyRate: 2500, dailyCost: 780 },
+        { role: 'Manager',           dailyRate: 3400, dailyCost: 1050 },
+        { role: 'Senior Manager',    dailyRate: 4700, dailyCost: 1500 },
+        { role: 'Partner',           dailyRate: 7200, dailyCost: 2300 },
+        { role: 'Contractor',        dailyRate: 1400, dailyCost: 1000 },
+      ],
+      createdAt: now,
+    },
+    {
+      id: 'rc-us-meridian',
+      name: 'Meridian Financial — Volume 2025',
+      region: 'US',
+      currency: 'USD',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1350, dailyCost: 520 },
+        { role: 'Senior Consultant', dailyRate: 2000, dailyCost: 780 },
+        { role: 'Manager',           dailyRate: 2700, dailyCost: 1050 },
+        { role: 'Senior Manager',    dailyRate: 3800, dailyCost: 1500 },
+        { role: 'Partner',           dailyRate: 6000, dailyCost: 2300 },
+        { role: 'Contractor',        dailyRate: 1100, dailyCost: 1000 },
+      ],
+      createdAt: now,
+    },
+    {
+      id: 'rc-us-globex',
+      name: 'Globex Industries — MSA 2025',
+      region: 'US',
+      currency: 'USD',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1450, dailyCost: 520 },
+        { role: 'Senior Consultant', dailyRate: 2100, dailyCost: 780 },
+        { role: 'Manager',           dailyRate: 2900, dailyCost: 1050 },
+        { role: 'Senior Manager',    dailyRate: 4000, dailyCost: 1500 },
+        { role: 'Partner',           dailyRate: 6200, dailyCost: 2300 },
+        { role: 'Contractor',        dailyRate: 1150, dailyCost: 1000 },
+      ],
+      createdAt: now,
+    },
+    {
+      id: 'rc-fr-2025',
+      name: 'France Standard 2025',
+      region: 'France',
+      currency: 'EUR',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1200, dailyCost: 440 },
+        { role: 'Senior Consultant', dailyRate: 1800, dailyCost: 650 },
+        { role: 'Manager',           dailyRate: 2600, dailyCost: 920 },
+        { role: 'Senior Manager',    dailyRate: 3600, dailyCost: 1300 },
+        { role: 'Partner',           dailyRate: 5500, dailyCost: 1950 },
+        { role: 'Contractor',        dailyRate: 1000, dailyCost: 850 },
+      ],
+      createdAt: now,
+    },
+    {
+      id: 'rc-fr-lafarge',
+      name: 'Lafarge Group — Custom 2025',
+      region: 'France',
+      currency: 'EUR',
+      roles: [
+        { role: 'Consultant',        dailyRate: 1100, dailyCost: 440 },
+        { role: 'Senior Consultant', dailyRate: 1700, dailyCost: 650 },
+        { role: 'Manager',           dailyRate: 2400, dailyCost: 920 },
+        { role: 'Senior Manager',    dailyRate: 3400, dailyCost: 1300 },
+        { role: 'Partner',           dailyRate: 5200, dailyCost: 1950 },
+        { role: 'Contractor',        dailyRate: 950,  dailyCost: 850 },
+      ],
+      createdAt: now,
+    },
+  ];
 
-  const frCard: RateCard = {
-    id: 'rc-fr-2025',
-    name: 'France Standard 2025',
-    region: 'France',
-    currency: 'EUR',
-    roles: [
-      { role: 'Consultant', dailyRate: 1200 },
-      { role: 'Senior Consultant', dailyRate: 1800 },
-      { role: 'Manager', dailyRate: 2600 },
-      { role: 'Senior Manager', dailyRate: 3600 },
-      { role: 'Partner', dailyRate: 5500 },
-    ],
-    createdAt: now,
-  };
-
-  upsertRateCard(usCard);
-  upsertRateCard(frCard);
+  cards.forEach(upsertRateCard);
 
   if (getPricingBooks().length > 0) return;
+
+  const offset = (n: number, days: number[]): number[] => [...Array(n).fill(0), ...days];
 
   const books: PricingBook[] = [
     {
@@ -47,22 +113,19 @@ export function seedDemoData(): void {
       client: 'Acme Corporation',
       engagement: 'Supply Chain Transformation',
       region: 'US',
-      baseRateCardId: 'rc-us-2025',
-      baseRateCardName: 'US Standard 2025',
+      baseRateCardId: 'rc-us-acme',
+      baseRateCardName: 'Acme Corp — Premium 2025',
       status: 'Final',
       discount: 5,
       markup: 0,
-      // Partner: 2w×5d×$6500 + $1500 travel = $66,500
-      // Manager: 6w×5d×$3000 + $500 exp = $90,500
-      // Senior Consultant: 12w×5d×$2200 + $1000 exp + $2000 travel = $135,000
-      // Consultant: 8w×5d×$1500 = $60,000  → subtotal $352,000 → -5% = $334,400
+      tePercent: 5,
       lineItems: [
-        { id: 'li-1', role: 'Partner', startWeek: 1, weeks: 2, daysPerWeek: 5, dailyRate: 6500, expenses: 0, travel: 1500 },
-        { id: 'li-2', role: 'Manager', startWeek: 1, weeks: 6, daysPerWeek: 5, dailyRate: 3000, expenses: 500, travel: 0 },
-        { id: 'li-3', role: 'Senior Consultant', startWeek: 3, weeks: 12, daysPerWeek: 5, dailyRate: 2200, expenses: 1000, travel: 2000 },
-        { id: 'li-4', role: 'Consultant', startWeek: 5, weeks: 8, daysPerWeek: 5, dailyRate: 1500, expenses: 0, travel: 0 },
+        { id: 'li-1', role: 'Partner',           name: 'Sarah Chen',     days: uniformDays(2, 5),               dailyRate: 7200, dailyCost: 2300 },
+        { id: 'li-2', role: 'Manager',           name: 'Marcus Webb',    days: uniformDays(6, 5),               dailyRate: 3400, dailyCost: 1050 },
+        { id: 'li-3', role: 'Senior Consultant', name: 'David Park',     days: offset(2, uniformDays(12, 5)),   dailyRate: 2500, dailyCost: 780 },
+        { id: 'li-4', role: 'Consultant',        name: 'Priya Patel',    days: offset(4, uniformDays(8, 5)),    dailyRate: 1700, dailyCost: 520 },
       ],
-      notes: 'Fixed-fee engagement with 5% loyalty discount. Travel for SC team in Chicago.',
+      notes: 'Fixed-fee engagement with 5% loyalty discount. T&E budgeted at 5% for Chicago site visits.',
       versions: [],
       createdAt: '2025-01-15T10:00:00Z',
       updatedAt: '2025-02-01T14:00:00Z',
@@ -72,18 +135,16 @@ export function seedDemoData(): void {
       client: 'Meridian Financial',
       engagement: 'Digital Strategy Review',
       region: 'US',
-      baseRateCardId: 'rc-us-2025',
-      baseRateCardName: 'US Standard 2025',
+      baseRateCardId: 'rc-us-meridian',
+      baseRateCardName: 'Meridian Financial — Volume 2025',
       status: 'Draft',
       discount: 0,
       markup: 10,
-      // Partner: 1w×5d×$6500 = $32,500
-      // Senior Manager: 4w×5d×$4200 + $2000 + $3000 = $89,000
-      // Senior Consultant: 6w×5d×$2200 + $500 = $66,500 → subtotal $188,000 → +10% = $206,800
+      tePercent: 6,
       lineItems: [
-        { id: 'li-5', role: 'Partner', startWeek: 1, weeks: 1, daysPerWeek: 5, dailyRate: 6500, expenses: 0, travel: 0 },
-        { id: 'li-6', role: 'Senior Manager', startWeek: 1, weeks: 4, daysPerWeek: 5, dailyRate: 4200, expenses: 2000, travel: 3000 },
-        { id: 'li-7', role: 'Senior Consultant', startWeek: 2, weeks: 6, daysPerWeek: 5, dailyRate: 2200, expenses: 500, travel: 0 },
+        { id: 'li-5', role: 'Partner',           name: 'James Wilson',   days: uniformDays(1, 5),              dailyRate: 6000, dailyCost: 2300 },
+        { id: 'li-6', role: 'Senior Manager',    name: 'Lisa Tanaka',    days: uniformDays(4, 5),              dailyRate: 3800, dailyCost: 1500 },
+        { id: 'li-7', role: 'Senior Consultant', name: 'Roberto Silva',  days: offset(1, uniformDays(6, 5)),   dailyRate: 2000, dailyCost: 780 },
       ],
       notes: '',
       versions: [],
@@ -95,23 +156,44 @@ export function seedDemoData(): void {
       client: 'Lafarge Group',
       engagement: 'Operational Excellence',
       region: 'France',
-      baseRateCardId: 'rc-fr-2025',
-      baseRateCardName: 'France Standard 2025',
+      baseRateCardId: 'rc-fr-lafarge',
+      baseRateCardName: 'Lafarge Group — Custom 2025',
       status: 'Draft',
       discount: 0,
       markup: 0,
-      // Partner: 2w×4d×€5500 + €2000 travel = €46,000
-      // Manager: 5w×5d×€2600 + €1500 + €1000 = €67,500
-      // Consultant: 10w×5d×€1200 = €60,000 → total €173,500
+      tePercent: 4,
       lineItems: [
-        { id: 'li-8', role: 'Partner', startWeek: 1, weeks: 2, daysPerWeek: 4, dailyRate: 5500, expenses: 0, travel: 2000 },
-        { id: 'li-9', role: 'Manager', startWeek: 2, weeks: 5, daysPerWeek: 5, dailyRate: 2600, expenses: 1500, travel: 1000 },
-        { id: 'li-10', role: 'Consultant', startWeek: 3, weeks: 10, daysPerWeek: 5, dailyRate: 1200, expenses: 0, travel: 0 },
+        { id: 'li-8',  role: 'Partner',    name: 'Pierre Dubois',     days: uniformDays(2, 4),               dailyRate: 5200, dailyCost: 1950 },
+        { id: 'li-9',  role: 'Manager',    name: 'Elena Marchetti',   days: offset(1, uniformDays(5, 5)),    dailyRate: 2400, dailyCost: 920 },
+        { id: 'li-10', role: 'Consultant', name: 'Amit Kumar',        days: offset(2, uniformDays(10, 5)),   dailyRate: 1100, dailyCost: 440 },
       ],
-      notes: 'Paris-based engagement. Partner travel from NYC included.',
+      notes: 'Paris-based engagement. Partner travel from NYC included in T&E.',
       versions: [],
       createdAt: '2025-04-01T08:00:00Z',
       updatedAt: '2025-04-01T08:00:00Z',
+    },
+    {
+      id: 'book-4',
+      client: 'Globex Industries',
+      engagement: 'M&A Integration Planning',
+      region: 'US',
+      baseRateCardId: 'rc-us-globex',
+      baseRateCardName: 'Globex Industries — MSA 2025',
+      status: 'Final',
+      discount: 0,
+      markup: 5,
+      tePercent: 7,
+      lineItems: [
+        { id: 'li-11', role: 'Partner',           name: 'Helena Reyes',   days: uniformDays(3, 4),               dailyRate: 6200, dailyCost: 2300 },
+        { id: 'li-12', role: 'Senior Manager',    name: "Tom O'Brien",    days: uniformDays(8, 5),               dailyRate: 4000, dailyCost: 1500 },
+        { id: 'li-13', role: 'Manager',           name: 'Yuki Tanaka',    days: offset(1, uniformDays(8, 5)),    dailyRate: 2900, dailyCost: 1050 },
+        { id: 'li-14', role: 'Senior Consultant', name: 'Nadia Hassan',   days: offset(2, uniformDays(6, 5)),    dailyRate: 2100, dailyCost: 780 },
+        { id: 'li-15', role: 'Contractor',        name: 'Devon Brooks',   days: offset(2, uniformDays(4, 4)),    dailyRate: 1150, dailyCost: 1000 },
+      ],
+      notes: 'Cross-border integration. Heavy travel expected — T&E set to 7%. Contractor brought in for SAP expertise.',
+      versions: [],
+      createdAt: '2025-02-20T11:00:00Z',
+      updatedAt: '2025-03-15T16:00:00Z',
     },
   ];
 

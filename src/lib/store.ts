@@ -2,6 +2,18 @@ import { RateCard, PricingBook } from './types';
 
 const RATE_CARDS_KEY = 'pb:rate_cards';
 const BOOKS_KEY = 'pb:pricing_books';
+const SCHEMA_KEY = 'pb:schema_version';
+const SCHEMA_VERSION = '3';
+
+export function ensureSchema(): void {
+  if (typeof window === 'undefined') return;
+  const v = window.localStorage.getItem(SCHEMA_KEY);
+  if (v !== SCHEMA_VERSION) {
+    window.localStorage.removeItem(RATE_CARDS_KEY);
+    window.localStorage.removeItem(BOOKS_KEY);
+    window.localStorage.setItem(SCHEMA_KEY, SCHEMA_VERSION);
+  }
+}
 
 function get<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;

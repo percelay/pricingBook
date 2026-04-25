@@ -5,7 +5,8 @@ import { Plus, Edit2, Trash2, CreditCard } from 'lucide-react';
 import { getRateCards, upsertRateCard, deleteRateCard } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { RateCard, ROLES, Region, CURRENCY_BY_REGION } from '@/lib/types';
-import { formatCurrency } from '@/lib/calculations';
+import { formatCurrency, toDisplayRate, fromInputRate, rateUnit } from '@/lib/calculations';
+import { useRateMode } from '@/lib/rate-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,18 +18,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 type FormState = {
   name: string;
   region: Region;
-  roles: { role: string; dailyRate: number }[];
+  roles: { role: string; dailyRate: number; dailyCost: number }[];
 };
 
 function emptyForm(): FormState {
   return {
     name: '',
     region: 'US',
-    roles: ROLES.map(role => ({ role, dailyRate: 0 })),
+    roles: ROLES.map(role => ({ role, dailyRate: 0, dailyCost: 0 })),
   };
 }
 
 export default function RateCardsPage() {
+  const { mode } = useRateMode();
   const [cards, setCards] = useState<RateCard[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<RateCard | null>(null);
@@ -52,7 +54,7 @@ export default function RateCardsPage() {
     setForm({
       name: card.name,
       region: card.region,
-      roles: card.roles.map(r => ({ role: r.role, dailyRate: r.dailyRate })),
+      roles: card.roles.map(r => ({ role: r.role, dailyRate: r.dailyRate, dailyCost: r.dailyCost })),
     });
     setOpen(true);
   }
@@ -61,10 +63,11 @@ export default function RateCardsPage() {
     setForm(f => ({ ...f, region }));
   }
 
-  function handleRoleRate(role: string, value: string) {
+  function handleRoleField(role: string, field: 'dailyRate' | 'dailyCost', value: string) {
+    const stored = fromInputRate(Number(value) || 0, mode);
     setForm(f => ({
       ...f,
-      roles: f.roles.map(r => r.role === role ? { ...r, dailyRate: Number(value) || 0 } : r),
+      roles: f.roles.map(r => r.role === role ? { ...r, [field]: stored } : r),
     }));
   }
 
@@ -77,7 +80,11 @@ export default function RateCardsPage() {
       name: form.name.trim(),
       region: form.region,
       currency,
-      roles: form.roles.map(r => ({ role: r.role as RateCard['roles'][0]['role'], dailyRate: r.dailyRate })),
+      roles: form.roles.map(r => ({
+        role: r.role as RateCard['roles'][0]['role'],
+        dailyRate: r.dailyRate,
+        dailyCost: r.dailyCost,
+      })),
     };
     upsertRateCard(card);
     reload();
@@ -93,13 +100,17 @@ export default function RateCardsPage() {
   const usCards = cards.filter(c => c.region === 'US');
   const frCards = cards.filter(c => c.region === 'France');
   const currency = CURRENCY_BY_REGION[form.region];
+  const sym = currency === 'EUR' ? '€' : '$';
+  const unit = rateUnit(mode);
 
   return (
     <div className="p-8 max-w-5xl mx-auto">
       <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rate Cards</h1>
-          <p className="text-gray-500 mt-1">Define base daily rates by region and role</p>
+          <p className="text-gray-500 mt-1">
+            Bill rates and internal costs by region and role · viewing in <span className="font-medium text-gray-700">{mode === 'hourly' ? 'hourly' : 'daily'}</span> mode
+          </p>
         </div>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
@@ -140,7 +151,7 @@ export default function RateCardsPage() {
       )}
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Rate Card' : 'New Rate Card'}</DialogTitle>
           </DialogHeader>
@@ -148,7 +159,7 @@ export default function RateCardsPage() {
             <div className="space-y-1.5">
               <Label>Name</Label>
               <Input
-                placeholder="e.g. US Standard 2025"
+                placeholder="e.g. Acme Corp — Premium 2025"
                 value={form.name}
                 onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
               />
@@ -166,21 +177,34 @@ export default function RateCardsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Daily Rates</Label>
+              <div className="grid grid-cols-[1fr_120px_120px] gap-3 items-center">
+                <Label className="mb-0">Role</Label>
+                <Label className="mb-0 text-xs">Bill rate / {unit}</Label>
+                <Label className="mb-0 text-xs">Internal cost / {unit}</Label>
+              </div>
               <div className="space-y-2">
                 {form.roles.map(r => (
-                  <div key={r.role} className="flex items-center gap-3">
-                    <span className="text-sm text-gray-700 w-40 shrink-0">{r.role}</span>
-                    <div className="relative flex-1">
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                        {currency === 'EUR' ? '€' : '$'}
-                      </span>
+                  <div key={r.role} className="grid grid-cols-[1fr_120px_120px] gap-3 items-center">
+                    <span className="text-sm text-gray-700">{r.role}</span>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{sym}</span>
                       <Input
                         type="number"
                         min={0}
-                        className="pl-7"
-                        value={r.dailyRate || ''}
-                        onChange={e => handleRoleRate(r.role, e.target.value)}
+                        className="pl-7 tabular-nums"
+                        value={toDisplayRate(r.dailyRate, mode) || ''}
+                        onChange={e => handleRoleField(r.role, 'dailyRate', e.target.value)}
+                        placeholder="0"
+                      />
+                    </div>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">{sym}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        className="pl-7 tabular-nums"
+                        value={toDisplayRate(r.dailyCost, mode) || ''}
+                        onChange={e => handleRoleField(r.role, 'dailyCost', e.target.value)}
                         placeholder="0"
                       />
                     </div>
@@ -210,6 +234,9 @@ function RateCardCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const { mode } = useRateMode();
+  const unit = rateUnit(mode);
+
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -236,15 +263,29 @@ function RateCardCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          {card.roles.map(r => (
-            <div key={r.role} className="flex justify-between items-center text-sm">
-              <span className="text-gray-600">{r.role}</span>
-              <span className="font-semibold text-gray-900 tabular-nums">
-                {formatCurrency(r.dailyRate, card.currency)}<span className="text-gray-400 font-normal">/day</span>
-              </span>
-            </div>
-          ))}
+        <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1.5 text-sm items-baseline">
+          <span className="text-xs text-gray-400 uppercase tracking-wider">Role</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Rate</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Cost</span>
+          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Margin</span>
+          {card.roles.map(r => {
+            const margin = r.dailyRate > 0 ? ((r.dailyRate - r.dailyCost) / r.dailyRate) * 100 : 0;
+            return (
+              <div key={r.role} className="contents">
+                <span className="text-gray-700">{r.role}</span>
+                <span className="font-semibold text-gray-900 tabular-nums text-right">
+                  {formatCurrency(toDisplayRate(r.dailyRate, mode), card.currency)}
+                  <span className="text-gray-400 font-normal text-xs">/{unit}</span>
+                </span>
+                <span className="text-gray-500 tabular-nums text-right">
+                  {formatCurrency(toDisplayRate(r.dailyCost, mode), card.currency)}
+                </span>
+                <span className="tabular-nums text-right text-xs font-medium text-[#5fa07a]">
+                  {margin.toFixed(0)}%
+                </span>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

@@ -1,116 +1,158 @@
 'use client';
 
-import { LineItem, Role } from '@/lib/types';
-import { totalDays } from '@/lib/calculations';
+import { useState, useMemo } from 'react';
+import { Plus, Minus } from 'lucide-react';
+import { LineItem, Role, HOURS_PER_DAY } from '@/lib/types';
+import { totalDays, setWeekDays, timeUnit } from '@/lib/calculations';
+import { useRateMode } from '@/lib/rate-mode';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 
-const ROLE_COLORS: Record<Role, { bar: string; dot: string; label: string }> = {
-  'Partner':           { bar: 'bg-black',        dot: 'bg-black',        label: 'text-black' },
-  'Senior Manager':    { bar: 'bg-zinc-700',     dot: 'bg-zinc-700',     label: 'text-zinc-700' },
-  'Manager':           { bar: 'bg-zinc-500',     dot: 'bg-zinc-500',     label: 'text-zinc-500' },
-  'Senior Consultant': { bar: 'bg-[#77BB91]',   dot: 'bg-[#77BB91]',   label: 'text-[#77BB91]' },
-  'Consultant':        { bar: 'bg-zinc-300',     dot: 'bg-zinc-300',     label: 'text-zinc-400' },
+const ROLE_COLORS: Record<Role, string> = {
+  'Partner':           'bg-black',
+  'Senior Manager':    'bg-zinc-700',
+  'Manager':           'bg-zinc-500',
+  'Senior Consultant': 'bg-[#77BB91]',
+  'Consultant':        'bg-zinc-300',
+  'Contractor':        'bg-amber-400',
 };
 
-export default function EngagementTimeline({ lineItems }: { lineItems: LineItem[] }) {
-  if (lineItems.length === 0 || lineItems.every(i => i.weeks === 0)) return null;
+interface Props {
+  lineItems: LineItem[];
+  onChangeDays: (id: string, days: number[]) => void;
+}
 
-  const totalWeeks = Math.max(...lineItems.map(i => i.startWeek + i.weeks - 1), 4);
+export default function EditableTimeline({ lineItems, onChangeDays }: Props) {
+  const { mode } = useRateMode();
+  const [extraWeeks, setExtraWeeks] = useState(0);
 
-  // Label every nth week depending on length
-  const labelEvery = totalWeeks <= 8 ? 1 : totalWeeks <= 16 ? 2 : totalWeeks <= 32 ? 4 : 8;
+  const maxLen = useMemo(
+    () => lineItems.reduce((m, i) => Math.max(m, i.days.length), 0),
+    [lineItems]
+  );
+  const minWeeks = 4;
+  const totalWeeks = Math.max(maxLen + extraWeeks, minWeeks);
+  const unit = timeUnit(mode);
 
-  const weekNumbers = Array.from({ length: totalWeeks }, (_, i) => i + 1);
+  function updateCell(id: string, weekIdx: number, displayValue: number) {
+    const item = lineItems.find(i => i.id === id);
+    if (!item) return;
+    const daysVal = mode === 'hourly' ? displayValue / HOURS_PER_DAY : displayValue;
+    onChangeDays(id, setWeekDays(item.days, weekIdx, daysVal));
+  }
+
+  function addWeek() {
+    setExtraWeeks(w => w + 1);
+  }
+  function removeWeek() {
+    if (totalWeeks <= minWeeks) return;
+    if (extraWeeks > 0) {
+      setExtraWeeks(w => w - 1);
+      return;
+    }
+    lineItems.forEach(item => {
+      if (item.days.length === totalWeeks) {
+        onChangeDays(item.id, item.days.slice(0, totalWeeks - 1));
+      }
+    });
+  }
+
+  const totalLineDays = lineItems.reduce((s, i) => s + totalDays(i), 0);
+  const cellWidth = 40;
+  const nameColWidth = 220;
+  const totalColWidth = 64;
 
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-sm font-semibold text-gray-700">Engagement Timeline</CardTitle>
-          <div className="flex items-center gap-4 text-xs text-gray-400">
-            <span>{totalWeeks} weeks</span>
-            <span>{lineItems.reduce((s, i) => s + totalDays(i), 0)} total days</span>
+          <CardTitle className="text-sm font-semibold text-gray-700">Weekly Allocation</CardTitle>
+          <div className="flex items-center gap-3 text-xs text-gray-400">
+            <span>{totalWeeks} weeks · {mode === 'hourly' ? totalLineDays * HOURS_PER_DAY : totalLineDays} total {mode === 'hourly' ? 'hours' : 'days'}</span>
+            <div className="flex items-center gap-1">
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={removeWeek} disabled={totalWeeks <= minWeeks}>
+                <Minus className="h-3 w-3" />
+              </Button>
+              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={addWeek}>
+                <Plus className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {/* Week number header */}
-        <div className="flex items-center mb-2">
-          <div className="w-40 shrink-0" />
-          <div className="flex-1 relative h-5">
-            {weekNumbers.map(w => (
-              (w === 1 || w % labelEvery === 0) ? (
-                <span
-                  key={w}
-                  className="absolute text-xs text-gray-400 -translate-x-1/2 select-none"
-                  style={{ left: `${((w - 0.5) / totalWeeks) * 100}%` }}
-                >
-                  W{w}
-                </span>
-              ) : null
-            ))}
-          </div>
-        </div>
+        {lineItems.length === 0 ? (
+          <p className="text-center text-sm text-gray-400 py-6">Add a role to start allocating time</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <div
+              className="inline-grid items-center"
+              style={{
+                gridTemplateColumns: `${nameColWidth}px repeat(${totalWeeks}, ${cellWidth}px) ${totalColWidth}px`,
+              }}
+            >
+              {/* Header row */}
+              <div className="text-xs font-medium text-gray-400 px-2">Role / Consultant</div>
+              {Array.from({ length: totalWeeks }, (_, i) => (
+                <div key={i} className="text-xs font-medium text-gray-400 text-center">W{i + 1}</div>
+              ))}
+              <div className="text-xs font-medium text-gray-400 text-right pr-2">Total</div>
 
-        {/* Gantt rows */}
-        <div className="space-y-2">
-          {lineItems.map(item => {
-            const colors = ROLE_COLORS[item.role];
-            const startPct = ((item.startWeek - 1) / totalWeeks) * 100;
-            const widthPct = (item.weeks / totalWeeks) * 100;
-            const days = totalDays(item);
-
-            return (
-              <div key={item.id} className="flex items-center">
-                <div className="w-40 shrink-0 text-sm text-gray-600 truncate pr-4 text-right">
-                  {item.role}
-                </div>
-                <div className="flex-1 relative h-9 bg-gray-100 rounded-md overflow-hidden">
-                  {/* Week grid lines */}
-                  {weekNumbers.slice(0, -1).map(w => (
-                    <div
-                      key={w}
-                      className="absolute inset-y-0 w-px bg-white/70"
-                      style={{ left: `${(w / totalWeeks) * 100}%` }}
-                    />
-                  ))}
-                  {/* Bar */}
-                  {item.weeks > 0 && (
-                    <div
-                      className={`absolute inset-y-1.5 ${colors.bar} flex items-center overflow-hidden`}
-                      style={{
-                        left: `calc(${startPct}% + 2px)`,
-                        width: `calc(${widthPct}% - 4px)`,
-                      }}
-                    >
-                      <span className={`text-xs font-medium px-2.5 whitespace-nowrap overflow-hidden ${item.role === 'Consultant' || item.role === 'Senior Consultant' ? 'text-black' : 'text-white'}`}>
-                        {item.weeks}w · {item.daysPerWeek}d/wk
-                        {widthPct > 20 && ` = ${days}d`}
-                      </span>
+              {/* Item rows */}
+              {lineItems.map(item => {
+                const days = totalDays(item);
+                const display = mode === 'hourly' ? days * HOURS_PER_DAY : days;
+                return (
+                  <div key={item.id} className="contents">
+                    <div className="px-2 py-1.5 flex items-center gap-2 min-w-0">
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${ROLE_COLORS[item.role]}`} />
+                      <div className="min-w-0">
+                        <div className="text-xs font-medium text-gray-800 truncate">{item.role}</div>
+                        <div className="text-xs text-gray-400 truncate">{item.name || '—'}</div>
+                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                    {Array.from({ length: totalWeeks }, (_, w) => {
+                      const dayVal = item.days[w] ?? 0;
+                      const cellDisplay = mode === 'hourly' ? dayVal * HOURS_PER_DAY : dayVal;
+                      return (
+                        <div key={w} className="px-0.5 py-1">
+                          <input
+                            type="number"
+                            min={0}
+                            max={mode === 'hourly' ? 56 : 7}
+                            step={mode === 'hourly' ? 1 : 0.5}
+                            value={cellDisplay || ''}
+                            onChange={e => updateCell(item.id, w, Number(e.target.value) || 0)}
+                            placeholder="—"
+                            className="w-full h-7 text-center text-xs tabular-nums border border-gray-200 rounded focus:border-[#77BB91] focus:outline-none focus:ring-1 focus:ring-[#77BB91]/30 placeholder:text-gray-300 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                          />
+                        </div>
+                      );
+                    })}
+                    <div className="text-right text-sm font-semibold text-gray-900 tabular-nums pr-2">
+                      {display}{unit}
+                    </div>
+                  </div>
+                );
+              })}
 
-        {/* Legend */}
-        <div className="flex flex-wrap gap-x-6 gap-y-2 mt-5 pt-4 border-t border-gray-100">
-          {lineItems.map(item => {
-            const colors = ROLE_COLORS[item.role];
-            const days = totalDays(item);
-            return (
-              <div key={item.id} className="flex items-center gap-2 text-xs">
-                <div className={`w-2.5 h-2.5 rounded-sm shrink-0 ${colors.dot}`} />
-                <span className={`font-semibold ${colors.label}`}>{item.role}</span>
-                <span className="text-gray-400">
-                  Wk {item.startWeek}–{item.startWeek + item.weeks - 1} · {item.weeks}w · {days}d
-                </span>
+              {/* Footer row — per-week totals */}
+              <div className="text-xs font-medium text-gray-500 px-2 pt-2 border-t border-gray-100 mt-1">Per week</div>
+              {Array.from({ length: totalWeeks }, (_, w) => {
+                const wkTotal = lineItems.reduce((s, item) => s + (item.days[w] ?? 0), 0);
+                const wkDisplay = mode === 'hourly' ? wkTotal * HOURS_PER_DAY : wkTotal;
+                return (
+                  <div key={w} className="text-xs text-center text-gray-500 tabular-nums pt-2 border-t border-gray-100 mt-1">
+                    {wkDisplay || ''}
+                  </div>
+                );
+              })}
+              <div className="text-right text-xs font-bold text-gray-700 tabular-nums pr-2 pt-2 border-t border-gray-100 mt-1">
+                {mode === 'hourly' ? totalLineDays * HOURS_PER_DAY : totalLineDays}{unit}
               </div>
-            );
-          })}
-        </div>
+            </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

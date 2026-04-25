@@ -93,7 +93,7 @@ export default function Dashboard() {
 
 function BookCard({ book }: { book: PricingBook }) {
   const currency = book.region === 'France' ? 'EUR' : 'USD';
-  const { grandTotal } = calcTotals(book.lineItems, book.discount, book.markup);
+  const { grandTotal } = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const updated = new Date(book.updatedAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
