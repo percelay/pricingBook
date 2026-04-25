@@ -305,18 +305,19 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                           title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
                           className="h-8 text-sm px-2 tabular-nums"
                         />
-                        {(['dailyRate', 'dailyCost'] as const).map(field => (
-                          <div key={field} className="relative">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
-                            <Input
-                              type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                              value={toDisplayRate(item[field], mode) || ''}
-                              onChange={e => updateRate(item.id, field, e.target.value)}
-                              className="h-8 text-sm pl-5 pr-1 tabular-nums"
-                              placeholder="0"
-                            />
-                          </div>
-                        ))}
+                        <div className="relative">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                          <Input
+                            type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                            value={toDisplayRate(item.dailyRate, mode) || ''}
+                            onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                            className="h-8 text-sm pl-5 pr-1 tabular-nums"
+                            placeholder="0"
+                          />
+                        </div>
+                        <span className="text-xs text-gray-400 tabular-nums text-right pr-1">
+                          {sym}{toDisplayRate(item.dailyCost, mode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                        </span>
                         <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
                           {formatCurrency(sub, currency)}
                         </span>
