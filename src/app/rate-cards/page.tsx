@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react';
 import { Plus, Edit2, Trash2, CreditCard } from 'lucide-react';
 import { getRateCards, upsertRateCard, deleteRateCard } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, ROLES, Region, CURRENCY_BY_REGION } from '@/lib/types';
-import { formatCurrency, toDisplayRate, fromInputRate, rateUnit } from '@/lib/calculations';
+import { RateCard, ROLES, Region, CURRENCY_BY_REGION, REGION_FLAG } from '@/lib/types';
+import { formatMoney, toDisplayRate, toDisplayValue, fromInputValue, rateUnit, currencySymbol } from '@/lib/calculations';
 import { useRateMode } from '@/lib/rate-mode';
+import { useCurrencyMode } from '@/lib/currency-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,6 +32,7 @@ function emptyForm(): FormState {
 
 export default function RateCardsPage() {
   const { mode } = useRateMode();
+  const { mode: currencyMode } = useCurrencyMode();
   const [cards, setCards] = useState<RateCard[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<RateCard | null>(null);
@@ -64,7 +66,7 @@ export default function RateCardsPage() {
   }
 
   function handleRoleField(role: string, field: 'dailyRate' | 'dailyCost', value: string) {
-    const stored = fromInputRate(Number(value) || 0, mode);
+    const stored = fromInputValue(Number(value) || 0, mode, currencyMode);
     setForm(f => ({
       ...f,
       roles: f.roles.map(r => r.role === role ? { ...r, [field]: stored } : r),
@@ -99,8 +101,8 @@ export default function RateCardsPage() {
 
   const usCards = cards.filter(c => c.region === 'US');
   const frCards = cards.filter(c => c.region === 'France');
-  const currency = CURRENCY_BY_REGION[form.region];
-  const sym = currency === 'EUR' ? '€' : '$';
+  const ukCards = cards.filter(c => c.region === 'England');
+  const sym = currencySymbol(currencyMode);
   const unit = rateUnit(mode);
 
   return (
@@ -109,7 +111,7 @@ export default function RateCardsPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rate Cards</h1>
           <p className="text-gray-500 mt-1">
-            Bill rates and internal costs by region and role · viewing in <span className="font-medium text-gray-700">{mode === 'hourly' ? 'hourly' : 'daily'}</span> mode
+            Bill rates and internal costs by region and role · viewing in <span className="font-medium text-gray-700">{mode === 'hourly' ? 'hourly' : 'daily'}</span> · <span className="font-medium text-gray-700">{currencyMode === 'EUR' ? 'euros' : 'dollars'}</span>
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -128,6 +130,7 @@ export default function RateCardsPage() {
           {[
             { label: '🇺🇸 United States', list: usCards },
             { label: '🇫🇷 France', list: frCards },
+            { label: '🇬🇧 England', list: ukCards },
           ]
             .filter(g => g.list.length > 0)
             .map(group => (
@@ -171,8 +174,9 @@ export default function RateCardsPage() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="US">🇺🇸 United States (USD)</SelectItem>
-                  <SelectItem value="France">🇫🇷 France (EUR)</SelectItem>
+                  <SelectItem value="US">🇺🇸 United States</SelectItem>
+                  <SelectItem value="France">🇫🇷 France</SelectItem>
+                  <SelectItem value="England">🇬🇧 England</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -192,7 +196,7 @@ export default function RateCardsPage() {
                         type="number"
                         min={0}
                         className="pl-7 tabular-nums"
-                        value={toDisplayRate(r.dailyRate, mode) || ''}
+                        value={Math.round(toDisplayValue(r.dailyRate, mode, currencyMode)) || ''}
                         onChange={e => handleRoleField(r.role, 'dailyRate', e.target.value)}
                         placeholder="0"
                       />
@@ -203,7 +207,7 @@ export default function RateCardsPage() {
                         type="number"
                         min={0}
                         className="pl-7 tabular-nums"
-                        value={toDisplayRate(r.dailyCost, mode) || ''}
+                        value={Math.round(toDisplayValue(r.dailyCost, mode, currencyMode)) || ''}
                         onChange={e => handleRoleField(r.role, 'dailyCost', e.target.value)}
                         placeholder="0"
                       />
@@ -235,6 +239,7 @@ function RateCardCard({
   onDelete: () => void;
 }) {
   const { mode } = useRateMode();
+  const { mode: currencyMode } = useCurrencyMode();
   const unit = rateUnit(mode);
 
   return (
@@ -244,7 +249,7 @@ function RateCardCard({
           <div>
             <CardTitle className="text-base">{card.name}</CardTitle>
             <Badge variant="outline" className="mt-1.5 text-xs font-normal">
-              {card.region} · {card.currency}
+              {REGION_FLAG[card.region]} {card.region} · {currencyMode}
             </Badge>
           </div>
           <div className="flex gap-1">
@@ -274,11 +279,11 @@ function RateCardCard({
               <div key={r.role} className="contents">
                 <span className="text-gray-700">{r.role}</span>
                 <span className="font-semibold text-gray-900 tabular-nums text-right">
-                  {formatCurrency(toDisplayRate(r.dailyRate, mode), card.currency)}
+                  {formatMoney(toDisplayRate(r.dailyRate, mode), currencyMode)}
                   <span className="text-gray-400 font-normal text-xs">/{unit}</span>
                 </span>
                 <span className="text-gray-500 tabular-nums text-right">
-                  {formatCurrency(toDisplayRate(r.dailyCost, mode), card.currency)}
+                  {formatMoney(toDisplayRate(r.dailyCost, mode), currencyMode)}
                 </span>
                 <span className="tabular-nums text-right text-xs font-medium text-[#5fa07a]">
                   {margin.toFixed(0)}%

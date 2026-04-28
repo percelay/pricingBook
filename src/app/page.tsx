@@ -5,8 +5,9 @@ import Link from 'next/link';
 import { Plus, Search, FileText } from 'lucide-react';
 import { getPricingBooks } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { calcTotals, formatCurrency } from '@/lib/calculations';
-import { PricingBook } from '@/lib/types';
+import { calcTotals, formatMoney } from '@/lib/calculations';
+import { PricingBook, REGION_FLAG } from '@/lib/types';
+import { useCurrencyMode } from '@/lib/currency-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +73,7 @@ export default function Dashboard() {
             <SelectItem value="all">All Regions</SelectItem>
             <SelectItem value="US">US</SelectItem>
             <SelectItem value="France">France</SelectItem>
+            <SelectItem value="England">England</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -92,7 +94,7 @@ export default function Dashboard() {
 }
 
 function BookCard({ book }: { book: PricingBook }) {
-  const currency = book.region === 'France' ? 'EUR' : 'USD';
+  const { mode: currencyMode } = useCurrencyMode();
   const { grandTotal } = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const updated = new Date(book.updatedAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
@@ -118,7 +120,7 @@ function BookCard({ book }: { book: PricingBook }) {
         <CardContent>
           <div className="flex items-center gap-2 text-sm">
             <Badge variant="outline" className="text-xs font-normal">
-              {book.region === 'France' ? '🇫🇷' : '🇺🇸'} {book.region}
+              {REGION_FLAG[book.region]} {book.region}
             </Badge>
             <span className="text-gray-400 text-xs">{book.lineItems.length} roles</span>
             {book.versions.length > 0 && (
@@ -127,7 +129,7 @@ function BookCard({ book }: { book: PricingBook }) {
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-xl font-bold text-gray-900">
-              {formatCurrency(grandTotal, currency)}
+              {formatMoney(grandTotal, currencyMode)}
             </span>
             <span className="text-xs text-gray-400">{updated}</span>
           </div>

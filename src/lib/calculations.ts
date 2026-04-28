@@ -1,4 +1,4 @@
-import { LineItem, HOURS_PER_DAY, RateMode } from './types';
+import { LineItem, HOURS_PER_DAY, RateMode, CurrencyMode, EUR_PER_USD } from './types';
 
 export function totalDays(item: LineItem): number {
   return item.days.reduce((s, d) => s + d, 0);
@@ -92,12 +92,36 @@ export function formatCurrency(amount: number, currency = 'USD'): string {
   }).format(amount);
 }
 
+export function convertFromUSD(amountUSD: number, mode: CurrencyMode): number {
+  return mode === 'EUR' ? amountUSD * EUR_PER_USD : amountUSD;
+}
+
+export function convertToUSD(amount: number, mode: CurrencyMode): number {
+  return mode === 'EUR' ? amount / EUR_PER_USD : amount;
+}
+
+export function formatMoney(amountUSD: number, mode: CurrencyMode): string {
+  return formatCurrency(convertFromUSD(amountUSD, mode), mode);
+}
+
+export function currencySymbol(mode: CurrencyMode): string {
+  return mode === 'EUR' ? '€' : '$';
+}
+
 export function toDisplayRate(dailyRate: number, mode: RateMode): number {
   return mode === 'hourly' ? dailyRate / HOURS_PER_DAY : dailyRate;
 }
 
 export function fromInputRate(value: number, mode: RateMode): number {
   return mode === 'hourly' ? value * HOURS_PER_DAY : value;
+}
+
+export function toDisplayValue(usdDaily: number, rateMode: RateMode, currencyMode: CurrencyMode): number {
+  return convertFromUSD(toDisplayRate(usdDaily, rateMode), currencyMode);
+}
+
+export function fromInputValue(value: number, rateMode: RateMode, currencyMode: CurrencyMode): number {
+  return fromInputRate(convertToUSD(value, currencyMode), rateMode);
 }
 
 export function rateUnit(mode: RateMode): string {

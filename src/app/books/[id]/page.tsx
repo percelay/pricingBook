@@ -6,13 +6,14 @@ import Link from 'next/link';
 import { ArrowLeft, Download, History, Trash2, Check, Save, TrendingUp, Target } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { PricingBook, LineItem, ROLES, CURRENCY_BY_REGION, RateCard, TARGET_MARGIN_PCT } from '@/lib/types';
+import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
 import {
-  calcTotals, formatCurrency, lineSubtotal, lineCost, totalDays,
-  toDisplayRate, fromInputRate, rateUnit, isUniform, averageDaysPerWeek,
-  uniformDays, resizeDays,
+  calcTotals, formatMoney, lineSubtotal, lineCost, totalDays,
+  toDisplayValue, fromInputValue, rateUnit, isUniform, averageDaysPerWeek,
+  uniformDays, resizeDays, currencySymbol,
 } from '@/lib/calculations';
 import { useRateMode } from '@/lib/rate-mode';
+import { useCurrencyMode } from '@/lib/currency-mode';
 import { exportBookToExcel } from '@/lib/export';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const { id } = use(params);
   const router = useRouter();
   const { mode } = useRateMode();
+  const { mode: currencyMode } = useCurrencyMode();
   const [book, setBook] = useState<PricingBook | null>(null);
   const [rateCards, setRateCards] = useState<RateCard[]>([]);
   const [dirty, setDirty] = useState(false);
@@ -42,7 +44,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
   if (!book) return null;
 
-  const currency = CURRENCY_BY_REGION[book.region];
   const totals = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
@@ -67,7 +68,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
   function updateRate(itemId: string, field: 'dailyRate' | 'dailyCost', value: string) {
     const num = Number(value) || 0;
-    updateLineItemField(itemId, field, fromInputRate(num, mode));
+    updateLineItemField(itemId, field, fromInputValue(num, mode, currencyMode));
   }
 
   function updateWeeks(itemId: string, value: string) {
@@ -166,7 +167,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     setDirty(true);
   }
 
-  const sym = currency === 'EUR' ? '€' : '$';
+  const sym = currencySymbol(currencyMode);
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -183,7 +184,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <h1 className="text-2xl font-bold text-gray-900">{book.client}</h1>
               <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>{book.status}</Badge>
               <Badge variant="outline" className="font-normal">
-                {book.region === 'France' ? '🇫🇷' : '🇺🇸'} {book.region}
+                {REGION_FLAG[book.region]} {book.region}
               </Badge>
             </div>
             <p className="text-gray-500 mt-1">{book.engagement}</p>
@@ -223,7 +224,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                           {new Date(v.savedAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                         </p>
                         <p className="text-base font-bold text-gray-800 tabular-nums">
-                          {formatCurrency(vTotal, currency)}
+                          {formatMoney(vTotal, currencyMode)}
                         </p>
                         <Button size="sm" variant="outline" className="w-full h-7 text-xs" onClick={() => restoreVersion(v)}>
                           Restore this version
@@ -309,17 +310,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
                           <Input
                             type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                            value={toDisplayRate(item.dailyRate, mode) || ''}
+                            value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
                             onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
                             className="h-8 text-sm pl-5 pr-1 tabular-nums"
                             placeholder="0"
                           />
                         </div>
                         <span className="text-xs text-gray-400 tabular-nums text-right pr-1">
-                          {sym}{toDisplayRate(item.dailyCost, mode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                          {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                         </span>
                         <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
-                          {formatCurrency(sub, currency)}
+                          {formatMoney(sub, currencyMode)}
                         </span>
                         <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
                           <Trash2 className="h-3.5 w-3.5" />
@@ -363,29 +364,29 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <div className="border-t pt-3 space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Subtotal</span>
-                  <span className="tabular-nums">{formatCurrency(totals.subtotal, currency)}</span>
+                  <span className="tabular-nums">{formatMoney(totals.subtotal, currencyMode)}</span>
                 </div>
                 {book.discount > 0 && (
                   <div className="flex justify-between text-gray-500">
                     <span>Discount ({book.discount}%)</span>
-                    <span className="tabular-nums">-{formatCurrency(totals.discountAmount, currency)}</span>
+                    <span className="tabular-nums">-{formatMoney(totals.discountAmount, currencyMode)}</span>
                   </div>
                 )}
                 {book.markup > 0 && (
                   <div className="flex justify-between text-gray-700">
                     <span>Markup ({book.markup}%)</span>
-                    <span className="tabular-nums">+{formatCurrency(totals.markupAmount, currency)}</span>
+                    <span className="tabular-nums">+{formatMoney(totals.markupAmount, currencyMode)}</span>
                   </div>
                 )}
                 {book.tePercent > 0 && (
                   <div className="flex justify-between text-gray-700">
                     <span>T&amp;E ({book.tePercent}%)</span>
-                    <span className="tabular-nums">+{formatCurrency(totals.teAmount, currency)}</span>
+                    <span className="tabular-nums">+{formatMoney(totals.teAmount, currencyMode)}</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold text-gray-900 text-lg pt-1.5 border-t">
                   <span>Total</span>
-                  <span className="tabular-nums">{formatCurrency(totals.grandTotal, currency)}</span>
+                  <span className="tabular-nums">{formatMoney(totals.grandTotal, currencyMode)}</span>
                 </div>
               </div>
             </CardContent>
@@ -403,15 +404,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <CardContent className="space-y-2 text-sm">
                 <div className="flex justify-between text-gray-500">
                   <span>Net Fees</span>
-                  <span className="tabular-nums">{formatCurrency(totals.afterMarkup, currency)}</span>
+                  <span className="tabular-nums">{formatMoney(totals.afterMarkup, currencyMode)}</span>
                 </div>
                 <div className="flex justify-between text-gray-500">
                   <span>Internal Cost</span>
-                  <span className="tabular-nums">-{formatCurrency(totals.totalCost, currency)}</span>
+                  <span className="tabular-nums">-{formatMoney(totals.totalCost, currencyMode)}</span>
                 </div>
                 <div className="flex justify-between font-bold text-gray-900 pt-1.5 border-t border-zinc-200">
                   <span>Gross Margin</span>
-                  <span className="tabular-nums">{formatCurrency(totals.grossMargin, currency)}</span>
+                  <span className="tabular-nums">{formatMoney(totals.grossMargin, currencyMode)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-400 flex items-center gap-1">
@@ -447,7 +448,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                         {item.name && <span className="text-gray-400 ml-1">· {item.name}</span>}
                       </span>
                       <div className="flex items-baseline gap-3 shrink-0">
-                        <span className="text-xs text-gray-400 tabular-nums">{formatCurrency(margin, currency)}</span>
+                        <span className="text-xs text-gray-400 tabular-nums">{formatMoney(margin, currencyMode)}</span>
                         <span className={`font-semibold tabular-nums w-12 text-right ${above ? 'text-[#5fa07a]' : 'text-red-500'}`}>
                           {marginPct.toFixed(0)}%
                         </span>

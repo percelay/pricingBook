@@ -3,7 +3,7 @@ import { PricingBook } from './types';
 import { lineSubtotal, lineCost, calcTotals, totalDays } from './calculations';
 
 export function exportBookToExcel(book: PricingBook): void {
-  const currency = book.region === 'France' ? 'EUR' : 'USD';
+  const currency = 'USD';
   const totals = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const maxWeeks = book.lineItems.reduce((m, i) => Math.max(m, i.days.length), 0);
 

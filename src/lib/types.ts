@@ -15,17 +15,26 @@ export const ROLES: Role[] = [
   'Contractor',
 ];
 
-export type Region = 'US' | 'France';
+export type Region = 'US' | 'France' | 'England';
 export type Currency = 'USD' | 'EUR';
 export type BookStatus = 'Draft' | 'Final';
 export type RateMode = 'daily' | 'hourly';
+export type CurrencyMode = 'USD' | 'EUR';
 
 export const HOURS_PER_DAY = 8;
 export const TARGET_MARGIN_PCT = 30;
+export const EUR_PER_USD = 0.92;
 
 export const CURRENCY_BY_REGION: Record<Region, Currency> = {
   US: 'USD',
-  France: 'EUR',
+  France: 'USD',
+  England: 'USD',
+};
+
+export const REGION_FLAG: Record<Region, string> = {
+  US: '🇺🇸',
+  France: '🇫🇷',
+  England: '🇬🇧',
 };
 
 export interface RoleRate {
