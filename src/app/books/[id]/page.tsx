@@ -368,7 +368,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <div className="mb-1 hidden gap-1.5 px-1 lg:grid lg:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
+                  <div className="mb-1 hidden gap-1.5 px-1 md:grid md:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
                     {(isHybrid ? ['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''] : ['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', '']).map(h => (
                       <span key={h} className="min-w-0 truncate text-xs font-medium text-gray-400">{h}</span>
                     ))}
@@ -379,66 +379,152 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                       const avgDpw = averageDaysPerWeek(item.days);
                       const itemRateCardId = selectedRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : selectedRateCardIds[0] ?? '';
                       return (
-                        <div key={item.id} className="grid grid-cols-2 items-center gap-1.5 border border-gray-100 p-2 lg:border-0 lg:p-0 lg:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
-                          <span className="min-w-0 truncate text-sm font-medium text-gray-800">{item.role}</span>
-                          <Input
-                            placeholder="Consultant name"
-                            value={item.name}
-                            onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
-                            className="h-8 min-w-0 text-sm"
-                          />
-                          {isHybrid && (
-                            <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
-                              <SelectTrigger className="h-8 min-w-0 w-full text-sm">
-                                <SelectValue placeholder="Rate card">
-                                  {(v: string) => {
-                                    const card = rateCards.find(c => c.id === v);
-                                    return card ? `${REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
-                                  }}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                {rateCards.map(card => (
-                                  <SelectItem key={card.id} value={card.id}>
-                                    {REGION_FLAG[card.region]} {card.name}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          )}
-                          <Input
-                            type="number" min={0}
-                            value={item.days.length || ''}
-                            onChange={e => updateWeeks(item.id, e.target.value)}
-                            className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
-                          />
-                          <Input
-                            type="number" min={0} max={7} step={0.5}
-                            value={uniform && item.days.length > 0 ? item.days[0] : ''}
-                            placeholder={uniform ? '' : avgDpw.toFixed(1)}
-                            onChange={e => updateDpw(item.id, e.target.value)}
-                            title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
-                            className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
-                          />
-                          <div className="relative min-w-0">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                        <div key={item.id}>
+                          <div className="hidden items-center gap-1.5 md:grid md:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
+                            <span className="min-w-0 truncate text-sm font-medium text-gray-800">{item.role}</span>
                             <Input
-                              type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                              value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
-                              onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
-                              className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
-                              placeholder="0"
+                              placeholder="Consultant name"
+                              value={item.name}
+                              onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
+                              className="h-8 min-w-0 text-sm"
                             />
+                            {isHybrid && (
+                              <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                                <SelectTrigger className="h-8 min-w-0 w-full text-sm">
+                                  <SelectValue placeholder="Rate card">
+                                    {(v: string) => {
+                                      const card = rateCards.find(c => c.id === v);
+                                      return card ? `${REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                                    }}
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {rateCards.map(card => (
+                                    <SelectItem key={card.id} value={card.id}>
+                                      {REGION_FLAG[card.region]} {card.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            )}
+                            <Input
+                              type="number" min={0}
+                              value={item.days.length || ''}
+                              onChange={e => updateWeeks(item.id, e.target.value)}
+                              className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                            />
+                            <Input
+                              type="number" min={0} max={7} step={0.5}
+                              value={uniform && item.days.length > 0 ? item.days[0] : ''}
+                              placeholder={uniform ? '' : avgDpw.toFixed(1)}
+                              onChange={e => updateDpw(item.id, e.target.value)}
+                              title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
+                              className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                            />
+                            <div className="relative min-w-0">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                              <Input
+                                type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                                value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
+                                onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                                className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
+                                placeholder="0"
+                              />
+                            </div>
+                            <span className="min-w-0 truncate text-right text-xs tabular-nums text-gray-400">
+                              {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                            </span>
+                            <span className="min-w-0 truncate text-right text-sm font-semibold tabular-nums text-gray-900">
+                              {formatMoney(sub, currencyMode)}
+                            </span>
+                            <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 justify-self-end text-gray-300 hover:text-red-500 hover:bg-red-50">
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
                           </div>
-                          <span className="min-w-0 truncate text-right text-xs tabular-nums text-gray-400">
-                            {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                          </span>
-                          <span className="min-w-0 truncate text-right text-sm font-semibold tabular-nums text-gray-900">
-                            {formatMoney(sub, currencyMode)}
-                          </span>
-                          <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 justify-self-end text-gray-300 hover:text-red-500 hover:bg-red-50">
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </Button>
+
+                          <div className="space-y-3 border border-gray-100 p-3 md:hidden">
+                            <div className="flex items-start justify-between gap-3">
+                              <span className="max-w-[60%] truncate text-sm font-medium text-gray-800">{item.role}</span>
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-semibold text-gray-900 tabular-nums">{formatMoney(sub, currencyMode)}</span>
+                                <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
+                                  <Trash2 className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase tracking-wider text-gray-400">Consultant</Label>
+                              <Input
+                                placeholder="Consultant name"
+                                value={item.name}
+                                onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
+                                className="h-8 min-w-0 text-sm"
+                              />
+                            </div>
+                            {isHybrid && (
+                              <div className="space-y-1">
+                                <Label className="text-[10px] uppercase tracking-wider text-gray-400">Rate Card</Label>
+                                <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                                  <SelectTrigger className="h-8 min-w-0 w-full text-sm">
+                                    <SelectValue placeholder="Rate card">
+                                      {(v: string) => {
+                                        const card = rateCards.find(c => c.id === v);
+                                        return card ? `${REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                                      }}
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {rateCards.map(card => (
+                                      <SelectItem key={card.id} value={card.id}>
+                                        {REGION_FLAG[card.region]} {card.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <div className="space-y-1">
+                                <Label className="text-[10px] uppercase tracking-wider text-gray-400">Weeks</Label>
+                                <Input
+                                  type="number" min={0}
+                                  value={item.days.length || ''}
+                                  onChange={e => updateWeeks(item.id, e.target.value)}
+                                  className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] uppercase tracking-wider text-gray-400">d/wk</Label>
+                                <Input
+                                  type="number" min={0} max={7} step={0.5}
+                                  value={uniform && item.days.length > 0 ? item.days[0] : ''}
+                                  placeholder={uniform ? '' : avgDpw.toFixed(1)}
+                                  onChange={e => updateDpw(item.id, e.target.value)}
+                                  title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
+                                  className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label className="text-[10px] uppercase tracking-wider text-gray-400">Cost/{unit}</Label>
+                                <div className="flex h-8 items-center justify-end border border-gray-200 px-2 text-xs text-gray-400 tabular-nums">
+                                  {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                                </div>
+                              </div>
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-[10px] uppercase tracking-wider text-gray-400">Rate/{unit}</Label>
+                              <div className="relative min-w-0">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                                <Input
+                                  type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                                  value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
+                                  onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                                  className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
+                                  placeholder="0"
+                                />
+                              </div>
+                            </div>
+                          </div>
                         </div>
                       );
                     })}

@@ -6,6 +6,7 @@ import { convertFromUSD, convertToUSD, currencySymbol } from '@/lib/calculations
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 interface Props {
   rows?: PhasedPricingRow[];
@@ -116,7 +117,7 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3 lg:hidden">
+        <div className="space-y-3 md:hidden">
           {groups.map((group, groupIdx) =>
             group.map((row, indexInGroup) => {
               const displayFee = convertFromUSD(row.proposedFee, currencyMode);
@@ -125,68 +126,86 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
               return (
                 <div key={row.id} className="space-y-2 border border-gray-200 p-2">
                   {isFirst && (
-                    <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-2">
-                      <Input
-                        value={row.phaseNumber}
-                        onChange={e => updateGroupField(group, 'phaseNumber', e.target.value)}
-                        className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
-                        placeholder="1"
-                        aria-label={`Phase number ${groupIdx + 1}`}
-                      />
-                      <Input
-                        value={row.phaseName}
-                        onChange={e => updateGroupField(group, 'phaseName', e.target.value)}
-                        className="h-8 min-w-0 text-sm"
-                        placeholder="Discovery"
-                        aria-label={`Phase name ${groupIdx + 1}`}
-                      />
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-[64px_minmax(0,1fr)]">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-gray-400">Phase #</Label>
+                        <Input
+                          value={row.phaseNumber}
+                          onChange={e => updateGroupField(group, 'phaseNumber', e.target.value)}
+                          className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                          placeholder="1"
+                          aria-label={`Phase number ${groupIdx + 1}`}
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase tracking-wider text-gray-400">Phase Name</Label>
+                        <Input
+                          value={row.phaseName}
+                          onChange={e => updateGroupField(group, 'phaseName', e.target.value)}
+                          className="h-8 min-w-0 text-sm"
+                          placeholder="Discovery"
+                          aria-label={`Phase name ${groupIdx + 1}`}
+                        />
+                      </div>
                     </div>
                   )}
-                  <Input
-                    value={row.deliverableName}
-                    onChange={e => updateRow(row.id, 'deliverableName', e.target.value)}
-                    className="h-8 min-w-0 text-sm"
-                    placeholder="Executive readout"
-                    aria-label="Deliverable name"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <Label className="text-[10px] uppercase tracking-wider text-gray-400">Deliverable</Label>
                     <Input
-                      type="date"
-                      value={row.estimatedStartDate}
-                      onChange={e => updateRow(row.id, 'estimatedStartDate', e.target.value)}
-                      className="h-8 min-w-0 px-1.5 text-xs"
-                      aria-label="Estimated start date"
-                    />
-                    <Input
-                      type="date"
-                      value={row.estimatedEndDate}
-                      onChange={e => updateRow(row.id, 'estimatedEndDate', e.target.value)}
-                      className="h-8 min-w-0 px-1.5 text-xs"
-                      aria-label="Estimated end date"
+                      value={row.deliverableName}
+                      onChange={e => updateRow(row.id, 'deliverableName', e.target.value)}
+                      className="h-8 min-w-0 text-sm"
+                      placeholder="Executive readout"
+                      aria-label="Deliverable name"
                     />
                   </div>
-                  <div className="grid grid-cols-[minmax(0,1fr)_32px_32px] gap-1.5">
-                    <div className="relative min-w-0">
-                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">{sym}</span>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase tracking-wider text-gray-400">Est. Start</Label>
                       <Input
-                        type="number"
-                        min={0}
-                        step={1000}
-                        value={displayFee || ''}
-                        onChange={e => updateRow(row.id, 'proposedFee', convertToUSD(Number(e.target.value) || 0, currencyMode))}
-                        className="h-8 min-w-0 pl-5 pr-1.5 text-right text-sm tabular-nums"
-                        placeholder="0"
-                        aria-label="Proposed fee"
+                        type="date"
+                        value={row.estimatedStartDate}
+                        onChange={e => updateRow(row.id, 'estimatedStartDate', e.target.value)}
+                        className="h-8 min-w-0 px-1.5 text-xs"
+                        aria-label="Estimated start date"
                       />
                     </div>
-                    <Button variant="outline" size="icon" onClick={() => addDeliverable(row)} className="h-8 w-8" title="Add deliverable">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase tracking-wider text-gray-400">Est. End</Label>
+                      <Input
+                        type="date"
+                        value={row.estimatedEndDate}
+                        onChange={e => updateRow(row.id, 'estimatedEndDate', e.target.value)}
+                        className="h-8 min-w-0 px-1.5 text-xs"
+                        aria-label="Estimated end date"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_32px_32px] gap-1.5">
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase tracking-wider text-gray-400">Proposed Fee</Label>
+                      <div className="relative min-w-0">
+                        <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">{sym}</span>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1000}
+                          value={displayFee || ''}
+                          onChange={e => updateRow(row.id, 'proposedFee', convertToUSD(Number(e.target.value) || 0, currencyMode))}
+                          className="h-8 min-w-0 pl-5 pr-1.5 text-right text-sm tabular-nums"
+                          placeholder="0"
+                          aria-label="Proposed fee"
+                        />
+                      </div>
+                    </div>
+                    <Button variant="outline" size="icon" onClick={() => addDeliverable(row)} className="mt-5 h-8 w-8" title="Add deliverable">
                       <Plus className="h-3.5 w-3.5" />
                     </Button>
                     <Button
                       size="icon"
                       variant="ghost"
                       onClick={() => removeRow(row.id)}
-                      className="h-8 w-8 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                      className="mt-5 h-8 w-8 text-gray-300 hover:bg-red-50 hover:text-red-500"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </Button>
@@ -196,7 +215,7 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
             })
           )}
         </div>
-        <div className="hidden w-full overflow-hidden lg:block">
+        <div className="hidden w-full overflow-hidden md:block">
           <table className="w-full table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-400">
