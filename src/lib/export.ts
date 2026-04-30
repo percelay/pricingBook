@@ -372,8 +372,6 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 }
 
 function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
-  if (!book.showWeeklyAllocation) return;
-
   const weekCount = Math.max(1, book.lineItems.reduce((max, item) => Math.max(max, item.days.length), 0));
   const worksheet = workbook.addWorksheet('Weekly Allocation', {
     properties: { tabColor: { argb: `FF${COLORS.sand}` } },
@@ -438,7 +436,7 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
 }
 
 function addPhasedPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
-  if (!book.phasedPricing || book.phasedPricing.length === 0) return;
+  const phasedRows = book.phasedPricing ?? [];
 
   const worksheet = workbook.addWorksheet('Phased Pricing', {
     properties: { tabColor: { argb: `FF${COLORS.greenDark}` } },
@@ -484,7 +482,7 @@ function addPhasedPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
   });
 
-  book.phasedPricing.forEach((row, index) => {
+  phasedRows.forEach((row, index) => {
     const rowNumber = index + 5;
     const sheetRow = worksheet.getRow(rowNumber);
     sheetRow.values = [
@@ -516,7 +514,7 @@ function addPhasedPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
       showRowStripes: true,
     },
     columns: headers.map(name => ({ name, filterButton: true })),
-    rows: book.phasedPricing.map(row => [
+    rows: phasedRows.map(row => [
       row.phaseNumber,
       row.phaseName,
       row.deliverableName,
@@ -528,7 +526,7 @@ function addPhasedPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 
   worksheet.autoFilter = {
     from: { row: 4, column: 1 },
-    to: { row: book.phasedPricing.length + 4, column: 6 },
+    to: { row: phasedRows.length + 4, column: 6 },
   };
 }
 
@@ -567,7 +565,19 @@ function addHandoffNotesSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   });
 }
 
-export function buildBookWorkbook(book: PricingBook): ExcelJS.Workbook {
+export interface ExportOptions {
+  teamAndFee: boolean;
+  weeklyAllocation: boolean;
+  phasedPricing: boolean;
+}
+
+export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
+  teamAndFee: true,
+  weeklyAllocation: true,
+  phasedPricing: true,
+};
+
+export function buildBookWorkbook(book: PricingBook, options: ExportOptions = DEFAULT_EXPORT_OPTIONS): ExcelJS.Workbook {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'probook';
   workbook.lastModifiedBy = 'probook';
@@ -579,16 +589,16 @@ export function buildBookWorkbook(book: PricingBook): ExcelJS.Workbook {
   workbook.calcProperties.fullCalcOnLoad = true;
   workbook.views = [{ x: 0, y: 0, width: 16000, height: 9000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
 
-  addPricingModelSheet(workbook, book);
-  addWeeklyAllocationSheet(workbook, book);
-  addPhasedPricingSheet(workbook, book);
-  addHandoffNotesSheet(workbook, book);
+  if (options.teamAndFee) addPricingModelSheet(workbook, book);
+  if (options.weeklyAllocation) addWeeklyAllocationSheet(workbook, book);
+  if (options.phasedPricing) addPhasedPricingSheet(workbook, book);
+  if (options.teamAndFee) addHandoffNotesSheet(workbook, book);
 
   return workbook;
 }
 
-export async function exportBookToExcel(book: PricingBook): Promise<void> {
-  const workbook = buildBookWorkbook(book);
+export async function exportBookToExcel(book: PricingBook, options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<void> {
+  const workbook = buildBookWorkbook(book, options);
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer as BlobPart], {
     type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',

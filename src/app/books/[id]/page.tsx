@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
+import { ArrowLeft, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
@@ -14,7 +14,7 @@ import {
 } from '@/lib/calculations';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
-import { exportBookToExcel } from '@/lib/export';
+import { exportBookToExcel, ExportOptions } from '@/lib/export';
 import { shouldShowWeeklyAllocation } from '@/lib/weekly-allocation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +26,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
+import ExportDialog from '@/components/export-dialog';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -207,9 +208,14 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
         <div className="flex items-center gap-2 shrink-0">
           {dirty && <span className="text-xs text-gray-400 font-medium">Unsaved</span>}
-          <Button variant="outline" size="sm" onClick={() => exportBookToExcel(book)}>
-            <Download className="h-4 w-4 mr-1.5" />Export
-          </Button>
+          <ExportDialog
+            initial={{
+              teamAndFee: true,
+              weeklyAllocation: shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems),
+              phasedPricing: (book.phasedPricing?.length ?? 0) > 0,
+            }}
+            onConfirm={(options: ExportOptions) => exportBookToExcel(book, options)}
+          />
           <Sheet>
             <SheetTrigger render={<Button variant="outline" size="sm" />}>
               <History className="h-4 w-4 mr-1.5" />
