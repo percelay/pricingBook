@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Plus, Edit2, Trash2, CreditCard } from 'lucide-react';
 import { getRateCards, upsertRateCard, deleteRateCard } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
@@ -30,20 +30,22 @@ function emptyForm(): FormState {
   };
 }
 
+function loadRateCards() {
+  seedDemoData();
+  return getRateCards();
+}
+
 export default function RateCardsPage() {
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
-  const [cards, setCards] = useState<RateCard[]>([]);
+  const [cards, setCards] = useState<RateCard[]>(loadRateCards);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<RateCard | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm());
 
   function reload() {
-    seedDemoData();
-    setCards(getRateCards());
+    setCards(loadRateCards());
   }
-
-  useEffect(() => { reload(); }, []);
 
   function openCreate() {
     setEditing(null);

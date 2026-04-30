@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { RateMode } from './types';
+import { setLocalStorageItem, useLocalStorageValue } from './local-storage';
 
 const STORAGE_KEY = 'pb:rate_mode';
 
@@ -16,16 +17,11 @@ const RateModeContext = createContext<RateModeContextValue>({
 });
 
 export function RateModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<RateMode>('daily');
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === 'hourly' || saved === 'daily') setModeState(saved);
-  }, []);
+  const saved = useLocalStorageValue(STORAGE_KEY);
+  const mode: RateMode = saved === 'hourly' || saved === 'daily' ? saved : 'daily';
 
   function setMode(m: RateMode) {
-    setModeState(m);
-    window.localStorage.setItem(STORAGE_KEY, m);
+    setLocalStorageItem(STORAGE_KEY, m);
   }
 
   return (

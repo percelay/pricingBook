@@ -1,13 +1,14 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { BookOpen, LayoutDashboard, CreditCard, Plus, Clock, Coins } from 'lucide-react';
+import { useRouter, usePathname } from 'next/navigation';
+import { BookOpen, LayoutDashboard, CreditCard, Plus, Clock, Coins, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
+import { useProfile } from '@/lib/profile';
 import { RateMode, CurrencyMode } from '@/lib/types';
 
 const navItems = [
@@ -17,15 +18,22 @@ const navItems = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
   const { mode, setMode } = useRateMode();
   const { mode: currencyMode, setMode: setCurrencyMode } = useCurrencyMode();
+  const { profile, signOut } = useProfile();
+
+  function handleSignOut() {
+    signOut();
+    router.replace('/login');
+  }
 
   return (
     <aside className="w-56 shrink-0 bg-white text-gray-800 flex flex-col h-full border-r border-[#77BB91]">
       <div className="px-5 py-6 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
           <BookOpen className="h-5 w-5 text-[#77BB91]" />
-          <span className="font-semibold text-base tracking-tight">Pricing Book</span>
+          <span className="font-semibold text-base tracking-tight lowercase">probook</span>
         </div>
       </div>
 
@@ -86,6 +94,27 @@ export default function Nav() {
           </Button>
         </Link>
       </div>
+
+      {profile && (
+        <div className="p-3 border-t border-gray-100">
+          <div className="flex items-center gap-2.5 px-1 py-1.5">
+            <div className="h-8 w-8 shrink-0 bg-foreground text-background flex items-center justify-center text-[11px] font-semibold">
+              {profile.initials}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold text-gray-900 truncate leading-tight">{profile.name}</p>
+              <p className="text-[10px] text-gray-500 truncate uppercase tracking-wider">{profile.role}</p>
+            </div>
+            <button
+              onClick={handleSignOut}
+              title="Sign out"
+              className="h-7 w-7 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
     </aside>
   );
 }

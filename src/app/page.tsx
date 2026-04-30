@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import Link from 'next/link';
 import { Plus, Search, FileText } from 'lucide-react';
 import { getPricingBooks } from '@/lib/store';
@@ -15,15 +15,13 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
-  const [books, setBooks] = useState<PricingBook[]>([]);
+  const [books] = useState<PricingBook[]>(() => {
+    seedDemoData();
+    return getPricingBooks();
+  });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [regionFilter, setRegionFilter] = useState('all');
-
-  useEffect(() => {
-    seedDemoData();
-    setBooks(getPricingBooks());
-  }, []);
 
   const filtered = books.filter(b => {
     const q = search.toLowerCase();

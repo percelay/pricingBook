@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Trash2, TrendingUp, Target } from 'lucide-react';
@@ -26,24 +26,19 @@ export default function NewBookPage() {
   const router = useRouter();
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
-  const [rateCards, setRateCards] = useState<RateCard[]>([]);
+  const [rateCards] = useState<RateCard[]>(() => {
+    seedDemoData();
+    return getRateCards();
+  });
   const [client, setClient] = useState('');
   const [engagement, setEngagement] = useState('');
   const [region, setRegion] = useState<Region>('US');
-  const [rateCardId, setRateCardId] = useState('');
+  const [rateCardId, setRateCardId] = useState(() => rateCards.find(c => c.region === 'US')?.id ?? '');
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [notes, setNotes] = useState('');
-
-  useEffect(() => {
-    seedDemoData();
-    const cards = getRateCards();
-    setRateCards(cards);
-    const firstUS = cards.find(c => c.region === 'US');
-    if (firstUS) setRateCardId(firstUS.id);
-  }, []);
 
   const selectedCard = rateCards.find(c => c.id === rateCardId);
   const totals = calcTotals(lineItems, discount, markup, tePercent);

@@ -1,7 +1,8 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
+import { createContext, useContext, ReactNode } from 'react';
 import { CurrencyMode } from './types';
+import { setLocalStorageItem, useLocalStorageValue } from './local-storage';
 
 const STORAGE_KEY = 'pb:currency_mode';
 
@@ -16,16 +17,11 @@ const CurrencyModeContext = createContext<CurrencyModeContextValue>({
 });
 
 export function CurrencyModeProvider({ children }: { children: ReactNode }) {
-  const [mode, setModeState] = useState<CurrencyMode>('USD');
-
-  useEffect(() => {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-    if (saved === 'USD' || saved === 'EUR') setModeState(saved);
-  }, []);
+  const saved = useLocalStorageValue(STORAGE_KEY);
+  const mode: CurrencyMode = saved === 'USD' || saved === 'EUR' ? saved : 'USD';
 
   function setMode(m: CurrencyMode) {
-    setModeState(m);
-    window.localStorage.setItem(STORAGE_KEY, m);
+    setLocalStorageItem(STORAGE_KEY, m);
   }
 
   return (

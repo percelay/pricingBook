@@ -30,17 +30,20 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const router = useRouter();
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
-  const [book, setBook] = useState<PricingBook | null>(null);
-  const [rateCards, setRateCards] = useState<RateCard[]>([]);
+  const [initialState] = useState(() => {
+    seedDemoData();
+    return {
+      book: getPricingBook(id) ?? null,
+      rateCards: getRateCards(),
+    };
+  });
+  const [book, setBook] = useState<PricingBook | null>(() => initialState.book);
+  const [rateCards] = useState<RateCard[]>(() => initialState.rateCards);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
-    seedDemoData();
-    const b = getPricingBook(id);
-    if (!b) { router.push('/'); return; }
-    setBook(b);
-    setRateCards(getRateCards());
-  }, [id, router]);
+    if (!book) router.push('/');
+  }, [book, router]);
 
   if (!book) return null;
 
