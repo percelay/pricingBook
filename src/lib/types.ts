@@ -61,6 +61,16 @@ export interface LineItem {
   dailyCost: number;
 }
 
+export interface PhasedPricingRow {
+  id: string;
+  phaseNumber: string;
+  phaseName: string;
+  deliverableName: string;
+  estimatedStartDate: string;
+  estimatedEndDate: string;
+  proposedFee: number;
+}
+
 export interface PricingBookData {
   client: string;
   engagement: string;
@@ -72,6 +82,7 @@ export interface PricingBookData {
   markup: number;
   tePercent: number;
   lineItems: LineItem[];
+  phasedPricing?: PhasedPricingRow[];
   notes: string;
 }
 

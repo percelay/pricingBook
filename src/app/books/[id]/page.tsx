@@ -24,6 +24,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import EditableTimeline from '@/components/engagement-timeline';
+import PhasedPricing from '@/components/phased-pricing';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -148,7 +149,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             client: book.client, engagement: book.engagement, region: book.region,
             baseRateCardId: book.baseRateCardId, baseRateCardName: book.baseRateCardName,
             status, discount: book.discount, markup: book.markup, tePercent: book.tePercent,
-            lineItems: book.lineItems, notes: book.notes,
+            lineItems: book.lineItems, phasedPricing: book.phasedPricing, notes: book.notes,
           },
         },
       ],
@@ -417,6 +418,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                   <span>Gross Margin</span>
                   <span className="tabular-nums">{formatMoney(totals.grossMargin, currencyMode)}</span>
                 </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>Average Daily Rate (ADR)</span>
+                  <span className="tabular-nums">{formatMoney(totals.averageDailyRate, currencyMode)}</span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Target className="h-3 w-3" /> Target {TARGET_MARGIN_PCT}%
@@ -480,6 +485,11 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           <EditableTimeline
             lineItems={book.lineItems}
             onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
+          />
+          <PhasedPricing
+            rows={book.phasedPricing}
+            currencyMode={currencyMode}
+            onChange={rows => patch('phasedPricing', rows)}
           />
         </div>
       )}

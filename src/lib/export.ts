@@ -210,7 +210,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   const totals = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const worksheet = workbook.addWorksheet('Pricing Model', {
     properties: { tabColor: { argb: `FF${COLORS.green}` } },
-    views: [{ state: 'frozen', ySplit: 22, topLeftCell: 'A23', showGridLines: false }],
+    views: [{ state: 'frozen', ySplit: 23, topLeftCell: 'A24', showGridLines: false }],
     pageSetup: {
       orientation: 'landscape',
       fitToPage: true,
@@ -287,11 +287,17 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     percent: true,
     warning: totals.grossMarginPct < 30,
   });
+  addSummaryRow(
+    worksheet,
+    20,
+    'Average Daily Rate (ADR)',
+    formula('IF(SUM(LineItems[Total Days])=0,0,J9/SUM(LineItems[Total Days]))', totals.averageDailyRate)
+  );
 
-  styleSectionTitle(worksheet, 21, 1, 9);
-  worksheet.getCell('A21').value = 'Line Items - Editable Driver Table';
+  styleSectionTitle(worksheet, 22, 1, 9);
+  worksheet.getCell('A22').value = 'Line Items - Editable Driver Table';
 
-  const tableStartRow = 22;
+  const tableStartRow = 23;
   const tableRows = book.lineItems.map(item => {
     const subtotal = lineSubtotal(item);
     const cost = lineCost(item);
@@ -429,6 +435,101 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
   };
 }
 
+function addPhasedPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
+  if (!book.phasedPricing || book.phasedPricing.length === 0) return;
+
+  const worksheet = workbook.addWorksheet('Phased Pricing', {
+    properties: { tabColor: { argb: `FF${COLORS.greenDark}` } },
+    views: [{ state: 'frozen', ySplit: 4, showGridLines: false }],
+  });
+
+  worksheet.columns = [
+    { width: 12 },
+    { width: 24 },
+    { width: 32 },
+    { width: 18 },
+    { width: 18 },
+    { width: 18 },
+  ];
+
+  worksheet.mergeCells('A1:F1');
+  const title = worksheet.getCell('A1');
+  title.value = 'Phased Pricing';
+  title.fill = fill(COLORS.navy);
+  title.font = { bold: true, size: 16, color: { argb: `FF${COLORS.white}` } };
+  title.alignment = { vertical: 'middle' };
+  worksheet.getRow(1).height = 28;
+
+  worksheet.mergeCells('A2:F2');
+  const subtitle = worksheet.getCell('A2');
+  subtitle.value = 'Manual phase and deliverable pricing. These rows do not feed the pricing summary.';
+  subtitle.font = { italic: true, color: { argb: `FF${COLORS.grayText}` } };
+
+  const headers = [
+    'Phase #',
+    'Phase Name',
+    'Deliverable Name',
+    'Estimated Start Date',
+    'Estimated End Date',
+    'Proposed Fee',
+  ];
+  const headerRow = worksheet.getRow(4);
+  headerRow.values = headers;
+  headerRow.eachCell(cell => {
+    cell.fill = fill(COLORS.greenDark);
+    cell.font = { bold: true, color: { argb: `FF${COLORS.white}` } };
+    cell.border = THIN_BORDER;
+    cell.alignment = { horizontal: 'center', vertical: 'middle', wrapText: true };
+  });
+
+  book.phasedPricing.forEach((row, index) => {
+    const rowNumber = index + 5;
+    const sheetRow = worksheet.getRow(rowNumber);
+    sheetRow.values = [
+      row.phaseNumber,
+      row.phaseName,
+      row.deliverableName,
+      row.estimatedStartDate,
+      row.estimatedEndDate,
+      row.proposedFee,
+    ];
+    sheetRow.eachCell(cell => {
+      cell.border = THIN_BORDER;
+      cell.alignment = { vertical: 'middle', wrapText: true };
+    });
+    applyRange(worksheet, rowNumber, 1, rowNumber, 6, cell => {
+      cell.fill = fill(index % 2 === 0 ? COLORS.white : COLORS.sandLight);
+    });
+    worksheet.getCell(rowNumber, 6).numFmt = MONEY_FORMAT;
+  });
+
+  worksheet.addTable({
+    name: 'PhasedPricing',
+    displayName: 'PhasedPricing',
+    ref: 'A4',
+    headerRow: true,
+    totalsRow: false,
+    style: {
+      theme: 'TableStyleMedium4',
+      showRowStripes: true,
+    },
+    columns: headers.map(name => ({ name, filterButton: true })),
+    rows: book.phasedPricing.map(row => [
+      row.phaseNumber,
+      row.phaseName,
+      row.deliverableName,
+      row.estimatedStartDate,
+      row.estimatedEndDate,
+      row.proposedFee,
+    ]),
+  });
+
+  worksheet.autoFilter = {
+    from: { row: 4, column: 1 },
+    to: { row: book.phasedPricing.length + 4, column: 6 },
+  };
+}
+
 function addHandoffNotesSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   const worksheet = workbook.addWorksheet('Handoff Notes', {
     properties: { tabColor: { argb: `FF${COLORS.navy}` } },
@@ -478,6 +579,7 @@ export function buildBookWorkbook(book: PricingBook): ExcelJS.Workbook {
 
   addPricingModelSheet(workbook, book);
   addWeeklyAllocationSheet(workbook, book);
+  addPhasedPricingSheet(workbook, book);
   addHandoffNotesSheet(workbook, book);
 
   return workbook;

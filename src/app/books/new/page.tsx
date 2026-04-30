@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Trash2, TrendingUp, Target } from 'lucide-react';
 import { getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, LineItem, ROLES, Region, PricingBook, TARGET_MARGIN_PCT } from '@/lib/types';
+import { RateCard, LineItem, ROLES, Region, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, toDisplayValue, fromInputValue,
   rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays, currencySymbol,
@@ -21,6 +21,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditableTimeline from '@/components/engagement-timeline';
+import PhasedPricing from '@/components/phased-pricing';
 
 export default function NewBookPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function NewBookPage() {
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
   const [notes, setNotes] = useState('');
 
   const selectedCard = rateCards.find(c => c.id === rateCardId);
@@ -117,6 +119,7 @@ export default function NewBookPage() {
       markup,
       tePercent,
       lineItems,
+      phasedPricing,
       notes,
       versions: [],
       createdAt: new Date().toISOString(),
@@ -353,6 +356,10 @@ export default function NewBookPage() {
                   <span>Gross Margin</span>
                   <span className="tabular-nums">{formatMoney(totals.grossMargin, currencyMode)}</span>
                 </div>
+                <div className="flex justify-between text-gray-500">
+                  <span>Average Daily Rate (ADR)</span>
+                  <span className="tabular-nums">{formatMoney(totals.averageDailyRate, currencyMode)}</span>
+                </div>
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-gray-400 flex items-center gap-1">
                     <Target className="h-3 w-3" /> Target {TARGET_MARGIN_PCT}%
@@ -385,6 +392,11 @@ export default function NewBookPage() {
           <EditableTimeline
             lineItems={lineItems}
             onChangeDays={(id, days) => updateField(id, 'days', days)}
+          />
+          <PhasedPricing
+            rows={phasedPricing}
+            currencyMode={currencyMode}
+            onChange={setPhasedPricing}
           />
         </div>
       )}
