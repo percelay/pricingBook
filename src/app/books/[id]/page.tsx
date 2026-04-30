@@ -352,6 +352,22 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
           </Card>
 
+          {/* Editable weekly timeline */}
+          {book.lineItems.length > 0 && (
+            shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) ? (
+              <EditableTimeline
+                lineItems={book.lineItems}
+                onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
+                onRemoveSection={() => patch('showWeeklyAllocation', false)}
+              />
+            ) : (
+              <Button variant="outline" onClick={() => patch('showWeeklyAllocation', true)}>
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add weekly allocation
+              </Button>
+            )
+          )}
+
           {/* Notes */}
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
@@ -359,6 +375,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={4} placeholder="Assumptions, exclusions, context..." />
             </CardContent>
           </Card>
+
+          {/* Phased Pricing */}
+          {book.lineItems.length > 0 && (
+            <PhasedPricing
+              rows={book.phasedPricing}
+              currencyMode={currencyMode}
+              onChange={rows => patch('phasedPricing', rows)}
+            />
+          )}
         </div>
 
         {/* Sidebar */}
@@ -494,28 +519,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      {/* Editable weekly timeline */}
-      {book.lineItems.length > 0 && (
-        <div className="mt-6">
-          {shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) ? (
-            <EditableTimeline
-              lineItems={book.lineItems}
-              onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
-              onRemoveSection={() => patch('showWeeklyAllocation', false)}
-            />
-          ) : (
-            <Button variant="outline" onClick={() => patch('showWeeklyAllocation', true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Add weekly allocation
-            </Button>
-          )}
-          <PhasedPricing
-            rows={book.phasedPricing}
-            currencyMode={currencyMode}
-            onChange={rows => patch('phasedPricing', rows)}
-          />
-        </div>
-      )}
     </div>
   );
 }
