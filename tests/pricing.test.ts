@@ -9,8 +9,13 @@ import {
   uniformDays,
 } from '../src/lib/calculations';
 import { buildBookWorkbook } from '../src/lib/export';
+import {
+  buildLineItemFromRateCard,
+  normalizeRateCardIds,
+  reassignLineItemsToAvailableCards,
+} from '../src/lib/rate-card-selection';
 import { canAddWeeklyAllocation, shouldShowWeeklyAllocation } from '../src/lib/weekly-allocation';
-import { LineItem, PricingBook } from '../src/lib/types';
+import { LineItem, PricingBook, RateCard } from '../src/lib/types';
 
 function line(overrides: Partial<LineItem> = {}): LineItem {
   return {
@@ -20,6 +25,9 @@ function line(overrides: Partial<LineItem> = {}): LineItem {
     days: overrides.days ?? uniformDays(4, 5),
     dailyRate: overrides.dailyRate ?? 1000,
     dailyCost: overrides.dailyCost ?? 400,
+    rateCardId: overrides.rateCardId,
+    rateCardName: overrides.rateCardName,
+    rateCardRegion: overrides.rateCardRegion,
   };
 }
 
@@ -42,6 +50,20 @@ function book(overrides: Partial<PricingBook> = {}): PricingBook {
     versions: overrides.versions ?? [],
     createdAt: overrides.createdAt ?? '2026-04-30T00:00:00.000Z',
     updatedAt: overrides.updatedAt ?? '2026-04-30T00:00:00.000Z',
+  };
+}
+
+function rateCard(overrides: Partial<RateCard> = {}): RateCard {
+  return {
+    id: overrides.id ?? 'rc-us',
+    name: overrides.name ?? 'US Standard',
+    region: overrides.region ?? 'US',
+    currency: overrides.currency ?? 'USD',
+    roles: overrides.roles ?? [
+      { role: 'Consultant', dailyRate: 1500, dailyCost: 500 },
+      { role: 'Manager', dailyRate: 3000, dailyCost: 1000 },
+    ],
+    createdAt: overrides.createdAt ?? '2026-04-30T00:00:00.000Z',
   };
 }
 
@@ -153,4 +175,79 @@ test('workbook includes weekly allocation and phased pricing only when enabled',
     workbook.worksheets.map(sheet => sheet.name),
     ['Pricing Model', 'Weekly Allocation', 'Phased Pricing', 'Handoff Notes']
   );
+});
+
+test('hybrid rate cards price consultants from different regions individually', () => {
+  const us = rateCard();
+  const france = rateCard({
+    id: 'rc-fr',
+    name: 'France Standard',
+    region: 'France',
+    roles: [
+      { role: 'Consultant', dailyRate: 1300, dailyCost: 480 },
+      { role: 'Manager', dailyRate: 2825, dailyCost: 1000 },
+    ],
+  });
+
+  const usConsultant = buildLineItemFromRateCard('li-us', 'Consultant', us);
+  const franceConsultant = buildLineItemFromRateCard('li-fr', 'Consultant', france);
+  const totals = calcTotals([usConsultant, franceConsultant], 0, 0, 0);
+
+  assert.equal(usConsultant.rateCardId, 'rc-us');
+  assert.equal(usConsultant.rateCardRegion, 'US');
+  assert.equal(usConsultant.dailyRate, 1500);
+  assert.equal(franceConsultant.rateCardId, 'rc-fr');
+  assert.equal(franceConsultant.rateCardRegion, 'France');
+  assert.equal(franceConsultant.dailyRate, 1300);
+  assert.equal(totals.subtotal, 56000);
+  assert.equal(totals.totalCost, 19600);
+});
+
+test('hybrid rate card selection dedupes, falls back, and reassigns removed cards', () => {
+  const us = rateCard();
+  const france = rateCard({
+    id: 'rc-fr',
+    name: 'France Standard',
+    region: 'France',
+    roles: [
+      { role: 'Consultant', dailyRate: 1300, dailyCost: 480 },
+      { role: 'Manager', dailyRate: 2825, dailyCost: 1000 },
+    ],
+  });
+  const cards = [us, france];
+
+  assert.deepEqual(normalizeRateCardIds(['missing', 'rc-us', 'rc-us', 'rc-fr'], cards), ['rc-us', 'rc-fr']);
+  assert.deepEqual(normalizeRateCardIds([], cards, 'rc-fr'), ['rc-fr']);
+
+  const reassigned = reassignLineItemsToAvailableCards(
+    [buildLineItemFromRateCard('li-fr', 'Consultant', france)],
+    cards,
+    ['rc-us']
+  );
+
+  assert.equal(reassigned[0].rateCardId, 'rc-us');
+  assert.equal(reassigned[0].rateCardRegion, 'US');
+  assert.equal(reassigned[0].dailyRate, 1500);
+  assert.equal(reassigned[0].dailyCost, 500);
+});
+
+test('pricing model export includes consultant-level rate card and region columns', () => {
+  const workbook = buildBookWorkbook(book({
+    region: 'Hybrid',
+    baseRateCardId: 'rc-us',
+    baseRateCardName: 'Hybrid: US Standard + France Standard',
+    selectedRateCardIds: ['rc-us', 'rc-fr'],
+    lineItems: [
+      line({ id: 'li-us', rateCardId: 'rc-us', rateCardName: 'US Standard', rateCardRegion: 'US' }),
+      line({ id: 'li-fr', rateCardId: 'rc-fr', rateCardName: 'France Standard', rateCardRegion: 'France' }),
+    ],
+  }));
+
+  const pricingSheet = workbook.getWorksheet('Pricing Model');
+
+  assert.ok(pricingSheet);
+  assert.equal(pricingSheet.getCell('C23').value, 'Rate Card');
+  assert.equal(pricingSheet.getCell('D23').value, 'Region');
+  assert.equal(pricingSheet.getCell('C24').value, 'US Standard');
+  assert.equal(pricingSheet.getCell('D25').value, 'France');
 });

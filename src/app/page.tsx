@@ -6,7 +6,7 @@ import { Plus, Search, FileText } from 'lucide-react';
 import { getPricingBooks } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { calcTotals, formatMoney } from '@/lib/calculations';
-import { PricingBook, REGION_FLAG } from '@/lib/types';
+import { PricingBook, BOOK_REGION_FLAG } from '@/lib/types';
 import { useCurrencyMode } from '@/lib/currency-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -72,6 +72,7 @@ export default function Dashboard() {
             <SelectItem value="US">US</SelectItem>
             <SelectItem value="France">France</SelectItem>
             <SelectItem value="England">England</SelectItem>
+            <SelectItem value="Hybrid">Hybrid</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -118,7 +119,7 @@ function BookCard({ book }: { book: PricingBook }) {
         <CardContent>
           <div className="flex items-center gap-2 text-sm">
             <Badge variant="outline" className="text-xs font-normal">
-              {REGION_FLAG[book.region]} {book.region}
+              {BOOK_REGION_FLAG[book.region]} {book.region}
             </Badge>
             <span className="text-gray-400 text-xs">{book.lineItems.length} roles</span>
             {book.versions.length > 0 && (

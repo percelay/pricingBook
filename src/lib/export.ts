@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { PricingBook } from './types';
 import { calcTotals, lineCost, lineSubtotal, totalDays } from './calculations';
+import { shouldShowWeeklyAllocation } from './weekly-allocation';
 
 const CURRENCY = 'USD';
 const MONEY_FORMAT = '$#,##0;[Red]($#,##0);-';
@@ -176,18 +177,18 @@ function styleLineItemTable(worksheet: ExcelJS.Worksheet, firstRow: number, last
     };
   });
 
-  applyRange(worksheet, firstRow + 1, 1, lastRow, 9, cell => {
+  applyRange(worksheet, firstRow + 1, 1, lastRow, 11, cell => {
     cell.border = THIN_BORDER;
     cell.alignment = { vertical: 'middle', wrapText: true };
   });
 
   for (let row = firstRow + 1; row <= lastRow; row += 1) {
     const isEven = (row - firstRow) % 2 === 0;
-    applyRange(worksheet, row, 1, row, 9, cell => {
+    applyRange(worksheet, row, 1, row, 11, cell => {
       cell.fill = fill(isEven ? COLORS.sandLight : COLORS.white);
     });
-    [3, 4, 5].forEach(col => styleInput(worksheet.getCell(row, col), col === 3 ? NUMBER_FORMAT : MONEY_FORMAT));
-    [6, 7, 8, 9].forEach(col => styleFormula(worksheet.getCell(row, col), col === 9 ? PERCENT_FORMAT : MONEY_FORMAT));
+    [5, 6, 7].forEach(col => styleInput(worksheet.getCell(row, col), col === 5 ? NUMBER_FORMAT : MONEY_FORMAT));
+    [8, 9, 10, 11].forEach(col => styleFormula(worksheet.getCell(row, col), col === 11 ? PERCENT_FORMAT : MONEY_FORMAT));
   }
 }
 
@@ -195,6 +196,8 @@ function setColumnWidths(worksheet: ExcelJS.Worksheet) {
   worksheet.columns = [
     { key: 'role', width: 20 },
     { key: 'consultant', width: 24 },
+    { key: 'rateCard', width: 30 },
+    { key: 'region', width: 12 },
     { key: 'days', width: 12 },
     { key: 'rate', width: 14 },
     { key: 'costRate', width: 14 },
@@ -231,7 +234,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 
   setColumnWidths(worksheet);
 
-  worksheet.mergeCells('A1:J1');
+  worksheet.mergeCells('A1:K1');
   const title = worksheet.getCell('A1');
   title.value = 'probook Pricing Model';
   title.font = { bold: true, size: 18, color: { argb: `FF${COLORS.white}` } };
@@ -240,7 +243,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   title.border = SECTION_BORDER;
   worksheet.getRow(1).height = 30;
 
-  worksheet.mergeCells('A2:J2');
+  worksheet.mergeCells('A2:K2');
   const subtitle = worksheet.getCell('A2');
   subtitle.value = `${book.client} - ${book.engagement}`;
   subtitle.font = { italic: true, color: { argb: `FF${COLORS.grayText}` } };
@@ -250,7 +253,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   setMetadataPair(worksheet, 4, 4, 'Engagement', book.engagement);
   setMetadataPair(worksheet, 4, 8, 'Status', book.status);
   setMetadataPair(worksheet, 5, 1, 'Region', book.region);
-  setMetadataPair(worksheet, 5, 4, 'Rate Card', book.baseRateCardName);
+  setMetadataPair(worksheet, 5, 4, 'Rate Card(s)', book.baseRateCardName);
   setMetadataPair(worksheet, 5, 8, 'Currency', CURRENCY);
   setMetadataPair(worksheet, 6, 1, 'Generated', new Date());
 
@@ -294,7 +297,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     formula('IF(SUM(LineItems[Total Days])=0,0,J9/SUM(LineItems[Total Days]))', totals.averageDailyRate)
   );
 
-  styleSectionTitle(worksheet, 22, 1, 9);
+  styleSectionTitle(worksheet, 22, 1, 11);
   worksheet.getCell('A22').value = 'Line Items - Editable Driver Table';
 
   const tableStartRow = 23;
@@ -307,6 +310,8 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     return [
       item.role,
       item.name || '',
+      item.rateCardName ?? book.baseRateCardName,
+      item.rateCardRegion ?? (book.region === 'Hybrid' ? '' : book.region),
       totalDays(item),
       item.dailyRate,
       item.dailyCost,
@@ -330,6 +335,8 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     columns: [
       { name: 'Role', filterButton: true },
       { name: 'Consultant', filterButton: true },
+      { name: 'Rate Card', filterButton: true },
+      { name: 'Region', filterButton: true },
       { name: 'Total Days', filterButton: true },
       { name: 'Daily Rate', filterButton: true },
       { name: 'Daily Cost', filterButton: true },
@@ -343,18 +350,18 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 
   const lastTableRow = tableStartRow + Math.max(tableRows.length, 1);
   styleLineItemTable(worksheet, tableStartRow, lastTableRow);
-  applyRange(worksheet, tableStartRow + 1, 4, lastTableRow, 8, cell => {
+  applyRange(worksheet, tableStartRow + 1, 6, lastTableRow, 10, cell => {
     cell.numFmt = MONEY_FORMAT;
   });
-  applyRange(worksheet, tableStartRow + 1, 3, lastTableRow, 3, cell => {
+  applyRange(worksheet, tableStartRow + 1, 5, lastTableRow, 5, cell => {
     cell.numFmt = NUMBER_FORMAT;
   });
-  applyRange(worksheet, tableStartRow + 1, 9, lastTableRow, 9, cell => {
+  applyRange(worksheet, tableStartRow + 1, 11, lastTableRow, 11, cell => {
     cell.numFmt = PERCENT_FORMAT;
   });
 
   const inputLegendRow = lastTableRow + 3;
-  worksheet.mergeCells(inputLegendRow, 1, inputLegendRow, 9);
+  worksheet.mergeCells(inputLegendRow, 1, inputLegendRow, 11);
   const legend = worksheet.getCell(inputLegendRow, 1);
   legend.value = 'Green cells are handoff inputs; blue cells are formulas. Add new roles inside the LineItems table so the summary formulas continue to expand automatically.';
   legend.fill = fill(COLORS.greenLight);
@@ -367,7 +374,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   worksheet.headerFooter.oddFooter = '&LConfidential&RPage &P of &N';
   worksheet.autoFilter = {
     from: { row: tableStartRow, column: 1 },
-    to: { row: lastTableRow, column: 9 },
+    to: { row: lastTableRow, column: 11 },
   };
 }
 
@@ -381,11 +388,12 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
   worksheet.columns = [
     { width: 20 },
     { width: 24 },
+    { width: 30 },
     ...Array.from({ length: weekCount }, () => ({ width: 8 })),
     { width: 12 },
   ];
 
-  worksheet.mergeCells(1, 1, 1, weekCount + 3);
+  worksheet.mergeCells(1, 1, 1, weekCount + 4);
   const title = worksheet.getCell(1, 1);
   title.value = 'Weekly Allocation Detail';
   title.fill = fill(COLORS.navy);
@@ -393,13 +401,13 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
   title.alignment = { vertical: 'middle' };
   worksheet.getRow(1).height = 28;
 
-  worksheet.mergeCells(2, 1, 2, weekCount + 3);
+  worksheet.mergeCells(2, 1, 2, weekCount + 4);
   const subtitle = worksheet.getCell(2, 1);
   subtitle.value = `${book.client} - ${book.engagement}`;
   subtitle.font = { italic: true, color: { argb: `FF${COLORS.grayText}` } };
 
   const headerRow = worksheet.getRow(4);
-  headerRow.values = ['Role', 'Consultant', ...Array.from({ length: weekCount }, (_, index) => `W${index + 1}`), 'Total'];
+  headerRow.values = ['Role', 'Consultant', 'Rate Card', ...Array.from({ length: weekCount }, (_, index) => `W${index + 1}`), 'Total'];
   headerRow.eachCell(cell => {
     cell.fill = fill(COLORS.greenDark);
     cell.font = { bold: true, color: { argb: `FF${COLORS.white}` } };
@@ -413,17 +421,18 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
     const values = [
       item.role,
       item.name || '',
+      item.rateCardName ?? book.baseRateCardName,
       ...Array.from({ length: weekCount }, (_, weekIndex) => item.days[weekIndex] ?? 0),
-      formula(`SUM(C${rowNumber}:${worksheet.getColumn(weekCount + 2).letter}${rowNumber})`, totalDays(item)),
+      formula(`SUM(D${rowNumber}:${worksheet.getColumn(weekCount + 3).letter}${rowNumber})`, totalDays(item)),
     ];
     row.values = values;
     row.eachCell(cell => {
       cell.border = THIN_BORDER;
       cell.alignment = { vertical: 'middle' };
     });
-    applyRange(worksheet, rowNumber, 3, rowNumber, weekCount + 3, (cell, _row, col) => {
+    applyRange(worksheet, rowNumber, 4, rowNumber, weekCount + 4, (cell, _row, col) => {
       cell.numFmt = NUMBER_FORMAT;
-      if (col < weekCount + 3) styleInput(cell, NUMBER_FORMAT);
+      if (col < weekCount + 4) styleInput(cell, NUMBER_FORMAT);
       else styleFormula(cell, NUMBER_FORMAT);
     });
   });
@@ -431,7 +440,7 @@ function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook)
   const lastRow = book.lineItems.length + 4;
   worksheet.autoFilter = {
     from: { row: 4, column: 1 },
-    to: { row: lastRow, column: weekCount + 3 },
+    to: { row: lastRow, column: weekCount + 4 },
   };
 }
 
@@ -548,7 +557,7 @@ function addHandoffNotesSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   const rows: Array<[string, string]> = [
     ['Client', book.client],
     ['Engagement', book.engagement],
-    ['Rate Card', book.baseRateCardName],
+    ['Rate Card(s)', book.baseRateCardName],
     ['Status', book.status],
     ['Workbook Use', 'Use the Pricing Model sheet as the source of truth. Green cells are inputs, blue cells are formulas, and the LineItems table can be extended with additional roles.'],
     ['Commercial Notes', book.notes || 'No notes entered.'],
@@ -577,7 +586,16 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   phasedPricing: true,
 };
 
-export function buildBookWorkbook(book: PricingBook, options: ExportOptions = DEFAULT_EXPORT_OPTIONS): ExcelJS.Workbook {
+function resolveExportOptions(book: PricingBook, options?: ExportOptions): ExportOptions {
+  return options ?? {
+    teamAndFee: true,
+    weeklyAllocation: shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems),
+    phasedPricing: (book.phasedPricing?.length ?? 0) > 0,
+  };
+}
+
+export function buildBookWorkbook(book: PricingBook, options?: ExportOptions): ExcelJS.Workbook {
+  const resolvedOptions = resolveExportOptions(book, options);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'probook';
   workbook.lastModifiedBy = 'probook';
@@ -589,15 +607,15 @@ export function buildBookWorkbook(book: PricingBook, options: ExportOptions = DE
   workbook.calcProperties.fullCalcOnLoad = true;
   workbook.views = [{ x: 0, y: 0, width: 16000, height: 9000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
 
-  if (options.teamAndFee) addPricingModelSheet(workbook, book);
-  if (options.weeklyAllocation) addWeeklyAllocationSheet(workbook, book);
-  if (options.phasedPricing) addPhasedPricingSheet(workbook, book);
-  if (options.teamAndFee) addHandoffNotesSheet(workbook, book);
+  if (resolvedOptions.teamAndFee) addPricingModelSheet(workbook, book);
+  if (resolvedOptions.weeklyAllocation) addWeeklyAllocationSheet(workbook, book);
+  if (resolvedOptions.phasedPricing) addPhasedPricingSheet(workbook, book);
+  if (resolvedOptions.teamAndFee) addHandoffNotesSheet(workbook, book);
 
   return workbook;
 }
 
-export async function exportBookToExcel(book: PricingBook, options: ExportOptions = DEFAULT_EXPORT_OPTIONS): Promise<void> {
+export async function exportBookToExcel(book: PricingBook, options?: ExportOptions): Promise<void> {
   const workbook = buildBookWorkbook(book, options);
   const buffer = await workbook.xlsx.writeBuffer();
   const blob = new Blob([buffer as BlobPart], {

@@ -6,11 +6,19 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
 import { getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, LineItem, ROLES, Region, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow } from '@/lib/types';
+import { RateCard, LineItem, ROLES, BookRegion, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, BOOK_REGION_FLAG } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, toDisplayValue, fromInputValue,
   rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays, currencySymbol,
 } from '@/lib/calculations';
+import {
+  applyRateCardToLineItem,
+  buildLineItemFromRateCard,
+  describeRateCardSelection,
+  normalizeRateCardIds,
+  reassignLineItemsToAvailableCards,
+  selectedRateCards,
+} from '@/lib/rate-card-selection';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
 import { shouldShowWeeklyAllocation } from '@/lib/weekly-allocation';
@@ -23,6 +31,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
+import RateCardSelector from '@/components/rate-card-selector';
 
 export default function NewBookPage() {
   const router = useRouter();
@@ -34,8 +43,12 @@ export default function NewBookPage() {
   });
   const [client, setClient] = useState('');
   const [engagement, setEngagement] = useState('');
-  const [region, setRegion] = useState<Region>('US');
+  const [region, setRegion] = useState<BookRegion>('US');
   const [rateCardId, setRateCardId] = useState(() => rateCards.find(c => c.region === 'US')?.id ?? '');
+  const [selectedRateCardIds, setSelectedRateCardIds] = useState<string[]>(() => {
+    const usCardId = rateCards.find(c => c.region === 'US')?.id;
+    return normalizeRateCardIds([usCardId], rateCards);
+  });
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
@@ -44,31 +57,60 @@ export default function NewBookPage() {
   const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
   const [notes, setNotes] = useState('');
 
-  const selectedCard = rateCards.find(c => c.id === rateCardId);
+  const availableRateCards = region === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === region);
+  const activeRateCardIds = normalizeRateCardIds(
+    region === 'Hybrid' ? selectedRateCardIds : [rateCardId],
+    availableRateCards,
+    rateCardId
+  );
+  const activeRateCards = selectedRateCards(rateCards, activeRateCardIds);
+  const selectedCard = activeRateCards[0];
   const totals = calcTotals(lineItems, discount, markup, tePercent);
-  const canSave = client.trim() && engagement.trim() && lineItems.length > 0;
+  const canSave = client.trim() && engagement.trim() && activeRateCardIds.length > 0 && lineItems.length > 0;
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
 
-  function handleRegionChange(r: Region) {
-    setRegion(r);
-    const card = rateCards.find(c => c.region === r);
-    if (card) setRateCardId(card.id);
-    setLineItems([]);
-    setShowWeeklyAllocation(false);
+  function applyRateCardSelection(nextRegion: BookRegion, ids: Array<string | undefined>) {
+    const scopedCards = nextRegion === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === nextRegion);
+    const normalizedIds = normalizeRateCardIds(ids, scopedCards, ids[0] ?? rateCardId);
+
+    setRegion(nextRegion);
+    setRateCardId(normalizedIds[0] ?? '');
+    setSelectedRateCardIds(normalizedIds);
+    setLineItems(items => reassignLineItemsToAvailableCards(items, rateCards, normalizedIds));
+  }
+
+  function handleRegionChange(nextRegion: BookRegion) {
+    if (nextRegion === 'Hybrid') {
+      const usCardId = rateCards.find(card => card.region === 'US')?.id;
+      const franceCardId = rateCards.find(card => card.region === 'France')?.id;
+      applyRateCardSelection('Hybrid', [...activeRateCardIds, usCardId, franceCardId]);
+      return;
+    }
+
+    applyRateCardSelection(nextRegion, [rateCards.find(card => card.region === nextRegion)?.id]);
+  }
+
+  function handleSingleRateCardChange(id: string) {
+    const card = rateCards.find(c => c.id === id);
+    if (!card) return;
+    applyRateCardSelection(card.region, [card.id]);
+  }
+
+  function toggleHybridRateCard(id: string) {
+    const nextIds = activeRateCardIds.includes(id)
+      ? activeRateCardIds.filter(existingId => existingId !== id)
+      : [...activeRateCardIds, id];
+
+    applyRateCardSelection('Hybrid', nextIds);
   }
 
   function addRole(role: string) {
     if (!role) return;
-    const roleRate = selectedCard?.roles.find(r => r.role === role);
-    setLineItems(items => [...items, {
-      id: crypto.randomUUID(),
-      role: role as LineItem['role'],
-      name: '',
-      days: uniformDays(4, 5),
-      dailyRate: roleRate?.dailyRate ?? 0,
-      dailyCost: roleRate?.dailyCost ?? 0,
-    }]);
+    setLineItems(items => [
+      ...items,
+      buildLineItemFromRateCard(crypto.randomUUID(), role as LineItem['role'], selectedCard),
+    ]);
   }
 
   function updateField<K extends keyof LineItem>(id: string, field: K, value: LineItem[K]) {
@@ -80,6 +122,13 @@ export default function NewBookPage() {
   function updateRate(id: string, field: 'dailyRate' | 'dailyCost', value: string) {
     const num = Number(value) || 0;
     updateField(id, field, fromInputValue(num, mode, currencyMode));
+  }
+
+  function updateLineItemRateCard(id: string, cardId: string) {
+    const card = rateCards.find(c => c.id === cardId);
+    setLineItems(items =>
+      items.map(item => item.id === id ? applyRateCardToLineItem(item, card) : item)
+    );
   }
 
   function updateWeeks(id: string, value: string) {
@@ -114,13 +163,15 @@ export default function NewBookPage() {
 
   function handleSave(status: 'Draft' | 'Final') {
     if (!canSave) return;
+    const bookRateCardIds = activeRateCardIds;
     const book: PricingBook = {
       id: crypto.randomUUID(),
       client: client.trim(),
       engagement: engagement.trim(),
       region,
-      baseRateCardId: rateCardId,
-      baseRateCardName: selectedCard?.name ?? '',
+      baseRateCardId: bookRateCardIds[0] ?? '',
+      baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds),
+      selectedRateCardIds: bookRateCardIds,
       status,
       discount,
       markup,
@@ -140,7 +191,7 @@ export default function NewBookPage() {
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       <div className="flex items-center gap-3 mb-8">
         <Link href="/">
           <Button variant="ghost" size="icon">
@@ -153,12 +204,12 @@ export default function NewBookPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Engagement Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
                   <Label>Client Name</Label>
                   <Input placeholder="Acme Corp" value={client} onChange={e => setClient(e.target.value)} />
@@ -168,32 +219,16 @@ export default function NewBookPage() {
                   <Input placeholder="Digital Transformation" value={engagement} onChange={e => setEngagement(e.target.value)} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>Region</Label>
-                  <Select value={region} onValueChange={v => v && handleRegionChange(v as Region)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="US">🇺🇸 United States</SelectItem>
-                      <SelectItem value="France">🇫🇷 France</SelectItem>
-                      <SelectItem value="England">🇬🇧 England</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label>Rate Card</Label>
-                  <Select value={rateCardId} onValueChange={v => v && setRateCardId(v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select rate card">
-                        {(v: string) => rateCards.find(c => c.id === v)?.name ?? 'Select rate card'}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      {rateCards.filter(c => c.region === region).map(c => (
-                        <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+              <div>
+                <div>
+                  <RateCardSelector
+                    region={region}
+                    rateCards={rateCards}
+                    selectedRateCardIds={activeRateCardIds}
+                    onRegionChange={handleRegionChange}
+                    onSingleRateCardChange={handleSingleRateCardChange}
+                    onToggleRateCard={toggleHybridRateCard}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -221,18 +256,20 @@ export default function NewBookPage() {
                   Add team roles using the dropdown above
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
+                <div className="overflow-x-auto">
+                  <div className="min-w-[940px] space-y-2">
+                    <div className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 px-1 mb-1">
+                    {['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
-                  </div>
+                    </div>
                   {lineItems.map(item => {
                     const sub = lineSubtotal(item);
                     const uniform = isUniform(item.days);
                     const avgDpw = averageDaysPerWeek(item.days);
+                    const itemRateCardId = activeRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : activeRateCardIds[0] ?? '';
                     return (
-                      <div key={item.id} className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 items-center">
+                      <div key={item.id} className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 items-center">
                         <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
                         <Input
                           placeholder="Consultant name"
@@ -240,6 +277,23 @@ export default function NewBookPage() {
                           onChange={e => updateField(item.id, 'name', e.target.value)}
                           className="h-8 text-sm"
                         />
+                        <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                          <SelectTrigger className="h-8 w-full text-sm">
+                            <SelectValue placeholder="Rate card">
+                              {(v: string) => {
+                                const card = rateCards.find(c => c.id === v);
+                                return card ? `${BOOK_REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                              }}
+                            </SelectValue>
+                          </SelectTrigger>
+                          <SelectContent>
+                            {activeRateCards.map(card => (
+                              <SelectItem key={card.id} value={card.id}>
+                                {BOOK_REGION_FLAG[card.region]} {card.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                         <Input
                           type="number" min={0}
                           value={item.days.length || ''}
@@ -276,6 +330,7 @@ export default function NewBookPage() {
                       </div>
                     );
                   })}
+                  </div>
                 </div>
               )}
             </CardContent>

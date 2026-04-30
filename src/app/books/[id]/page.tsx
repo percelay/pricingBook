@@ -6,12 +6,20 @@ import Link from 'next/link';
 import { ArrowLeft, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
+import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, BookRegion, BOOK_REGION_FLAG } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, lineCost, totalDays,
   toDisplayValue, fromInputValue, rateUnit, isUniform, averageDaysPerWeek,
   uniformDays, resizeDays, currencySymbol,
 } from '@/lib/calculations';
+import {
+  applyRateCardToLineItem,
+  buildLineItemFromRateCard,
+  describeRateCardSelection,
+  normalizeRateCardIds,
+  reassignLineItemsToAvailableCards,
+  selectedRateCards,
+} from '@/lib/rate-card-selection';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
 import { exportBookToExcel, ExportOptions } from '@/lib/export';
@@ -27,6 +35,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/co
 import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
 import ExportDialog from '@/components/export-dialog';
+import RateCardSelector from '@/components/rate-card-selector';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -53,6 +62,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const totals = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
+  const selectedRateCardIds = normalizeRateCardIds(
+    book.selectedRateCardIds ?? [book.baseRateCardId, ...book.lineItems.map(item => item.rateCardId)],
+    rateCards,
+    book.baseRateCardId
+  );
+  const activeRateCards = selectedRateCards(rateCards, selectedRateCardIds);
 
   function patch<K extends keyof PricingBook>(field: K, value: PricingBook[K]) {
     setBook(b => b ? { ...b, [field]: value } : b);
@@ -75,6 +90,63 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   function updateRate(itemId: string, field: 'dailyRate' | 'dailyCost', value: string) {
     const num = Number(value) || 0;
     updateLineItemField(itemId, field, fromInputValue(num, mode, currencyMode));
+  }
+
+  function updateRateCardSelection(nextRegion: BookRegion, ids: Array<string | undefined>) {
+    const scopedCards = nextRegion === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === nextRegion);
+    const normalizedIds = normalizeRateCardIds(ids, scopedCards, ids[0]);
+
+    setBook(b => {
+      if (!b) return b;
+      return {
+        ...b,
+        region: nextRegion,
+        baseRateCardId: normalizedIds[0] ?? '',
+        baseRateCardName: describeRateCardSelection(rateCards, normalizedIds),
+        selectedRateCardIds: normalizedIds,
+        lineItems: reassignLineItemsToAvailableCards(b.lineItems, rateCards, normalizedIds),
+      };
+    });
+    setDirty(true);
+  }
+
+  function handleRegionChange(nextRegion: BookRegion) {
+    if (nextRegion === 'Hybrid') {
+      const usCardId = rateCards.find(card => card.region === 'US')?.id;
+      const franceCardId = rateCards.find(card => card.region === 'France')?.id;
+      updateRateCardSelection('Hybrid', [...selectedRateCardIds, usCardId, franceCardId]);
+      return;
+    }
+
+    updateRateCardSelection(nextRegion, [rateCards.find(card => card.region === nextRegion)?.id]);
+  }
+
+  function handleSingleRateCardChange(id: string) {
+    const card = rateCards.find(c => c.id === id);
+    if (!card) return;
+    updateRateCardSelection(card.region, [card.id]);
+  }
+
+  function toggleHybridRateCard(id: string) {
+    const nextIds = selectedRateCardIds.includes(id)
+      ? selectedRateCardIds.filter(existingId => existingId !== id)
+      : [...selectedRateCardIds, id];
+
+    updateRateCardSelection('Hybrid', nextIds);
+  }
+
+  function updateLineItemRateCard(itemId: string, cardId: string) {
+    const card = rateCards.find(c => c.id === cardId);
+    setBook(b => {
+      if (!b) return b;
+      return {
+        ...b,
+        lineItems: b.lineItems.map(item =>
+          item.id === itemId ? applyRateCardToLineItem(item, card) : item
+        ),
+      };
+    });
+    setDirty(true);
   }
 
   function updateWeeks(itemId: string, value: string) {
@@ -111,20 +183,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
   function addRole(role: string) {
     if (!role || !book) return;
-    const card = rateCards.find(c => c.id === book.baseRateCardId);
-    const roleRate = card?.roles.find(r => r.role === role);
+    const card = activeRateCards[0];
     setBook(b => {
       if (!b) return b;
       return {
         ...b,
-        lineItems: [...b.lineItems, {
-          id: crypto.randomUUID(),
-          role: role as LineItem['role'],
-          name: '',
-          days: uniformDays(4, 5),
-          dailyRate: roleRate?.dailyRate ?? 0,
-          dailyCost: roleRate?.dailyCost ?? 0,
-        }],
+        lineItems: [
+          ...b.lineItems,
+          buildLineItemFromRateCard(crypto.randomUUID(), role as LineItem['role'], card),
+        ],
       };
     });
     setDirty(true);
@@ -146,8 +213,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   function handleSave(overrideStatus?: 'Draft' | 'Final') {
     if (!book) return;
     const status = overrideStatus ?? book.status;
+    const bookRateCardIds = selectedRateCardIds;
     const updated: PricingBook = {
       ...book,
+      baseRateCardId: bookRateCardIds[0] ?? book.baseRateCardId,
+      baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds) || book.baseRateCardName,
+      selectedRateCardIds: bookRateCardIds,
       status,
       updatedAt: new Date().toISOString(),
       versions: [
@@ -157,7 +228,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           savedAt: new Date().toISOString(),
           snapshot: {
             client: book.client, engagement: book.engagement, region: book.region,
-            baseRateCardId: book.baseRateCardId, baseRateCardName: book.baseRateCardName,
+            baseRateCardId: bookRateCardIds[0] ?? book.baseRateCardId,
+            baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds) || book.baseRateCardName,
+            selectedRateCardIds: bookRateCardIds,
             status, discount: book.discount, markup: book.markup, tePercent: book.tePercent,
             lineItems: book.lineItems, showWeeklyAllocation: book.showWeeklyAllocation, phasedPricing: book.phasedPricing, notes: book.notes,
           },
@@ -184,7 +257,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="p-8 max-w-6xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-3">
@@ -198,11 +271,11 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               <h1 className="text-2xl font-bold text-gray-900">{book.client}</h1>
               <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>{book.status}</Badge>
               <Badge variant="outline" className="font-normal">
-                {REGION_FLAG[book.region]} {book.region}
+                {BOOK_REGION_FLAG[book.region]} {book.region}
               </Badge>
             </div>
             <p className="text-gray-500 mt-1">{book.engagement}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Rate card: {book.baseRateCardName}</p>
+            <p className="text-xs text-gray-400 mt-0.5">Rate cards: {book.baseRateCardName}</p>
           </div>
         </div>
 
@@ -269,8 +342,22 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        <div className="col-span-2 space-y-5">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="space-y-5 lg:col-span-2">
+          <Card>
+            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Rate Card Setup</CardTitle></CardHeader>
+            <CardContent>
+              <RateCardSelector
+                region={book.region}
+                rateCards={rateCards}
+                selectedRateCardIds={selectedRateCardIds}
+                onRegionChange={handleRegionChange}
+                onSingleRateCardChange={handleSingleRateCardChange}
+                onToggleRateCard={toggleHybridRateCard}
+              />
+            </CardContent>
+          </Card>
+
           {/* Line Items */}
           <Card>
             <CardHeader>
@@ -292,61 +379,81 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                   No team members added
                 </div>
               ) : (
-                <div className="space-y-2">
-                  <div className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
-                      <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
-                    ))}
-                  </div>
-                  {book.lineItems.map(item => {
-                    const sub = lineSubtotal(item);
-                    const uniform = isUniform(item.days);
-                    const avgDpw = averageDaysPerWeek(item.days);
-                    return (
-                      <div key={item.id} className="grid grid-cols-[140px_1fr_56px_56px_84px_84px_84px_28px] gap-2 items-center">
-                        <span className="text-sm font-medium text-gray-800 truncate">{item.role}</span>
-                        <Input
-                          placeholder="Consultant name"
-                          value={item.name}
-                          onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
-                          className="h-8 text-sm"
-                        />
-                        <Input
-                          type="number" min={0}
-                          value={item.days.length || ''}
-                          onChange={e => updateWeeks(item.id, e.target.value)}
-                          className="h-8 text-sm px-2 tabular-nums"
-                        />
-                        <Input
-                          type="number" min={0} max={7} step={0.5}
-                          value={uniform && item.days.length > 0 ? item.days[0] : ''}
-                          placeholder={uniform ? '' : avgDpw.toFixed(1)}
-                          onChange={e => updateDpw(item.id, e.target.value)}
-                          title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
-                          className="h-8 text-sm px-2 tabular-nums"
-                        />
-                        <div className="relative">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                <div className="overflow-x-auto">
+                  <div className="min-w-[940px] space-y-2">
+                    <div className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 px-1 mb-1">
+                      {['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
+                        <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
+                      ))}
+                    </div>
+                    {book.lineItems.map(item => {
+                      const sub = lineSubtotal(item);
+                      const uniform = isUniform(item.days);
+                      const avgDpw = averageDaysPerWeek(item.days);
+                      const itemRateCardId = selectedRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : selectedRateCardIds[0] ?? '';
+                      return (
+                        <div key={item.id} className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 items-center">
+                          <span className="text-sm font-medium text-gray-800 truncate">{item.role}</span>
                           <Input
-                            type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                            value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
-                            onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
-                            className="h-8 text-sm pl-5 pr-1 tabular-nums"
-                            placeholder="0"
+                            placeholder="Consultant name"
+                            value={item.name}
+                            onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
+                            className="h-8 text-sm"
                           />
+                          <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                            <SelectTrigger className="h-8 w-full text-sm">
+                              <SelectValue placeholder="Rate card">
+                                {(v: string) => {
+                                  const card = rateCards.find(c => c.id === v);
+                                  return card ? `${BOOK_REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                                }}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {activeRateCards.map(card => (
+                                <SelectItem key={card.id} value={card.id}>
+                                  {BOOK_REGION_FLAG[card.region]} {card.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <Input
+                            type="number" min={0}
+                            value={item.days.length || ''}
+                            onChange={e => updateWeeks(item.id, e.target.value)}
+                            className="h-8 text-sm px-2 tabular-nums"
+                          />
+                          <Input
+                            type="number" min={0} max={7} step={0.5}
+                            value={uniform && item.days.length > 0 ? item.days[0] : ''}
+                            placeholder={uniform ? '' : avgDpw.toFixed(1)}
+                            onChange={e => updateDpw(item.id, e.target.value)}
+                            title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
+                            className="h-8 text-sm px-2 tabular-nums"
+                          />
+                          <div className="relative">
+                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                            <Input
+                              type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                              value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
+                              onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                              className="h-8 text-sm pl-5 pr-1 tabular-nums"
+                              placeholder="0"
+                            />
+                          </div>
+                          <span className="text-xs text-gray-400 tabular-nums text-right pr-1">
+                            {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
+                          </span>
+                          <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
+                            {formatMoney(sub, currencyMode)}
+                          </span>
+                          <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
-                        <span className="text-xs text-gray-400 tabular-nums text-right pr-1">
-                          {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
-                        </span>
-                        <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
-                          {formatMoney(sub, currencyMode)}
-                        </span>
-                        <Button size="icon" variant="ghost" onClick={() => removeLineItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </CardContent>
