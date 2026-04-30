@@ -116,17 +116,97 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
-          <table className="min-w-[980px] w-full border-collapse text-sm">
+        <div className="space-y-3 lg:hidden">
+          {groups.map((group, groupIdx) =>
+            group.map((row, indexInGroup) => {
+              const displayFee = convertFromUSD(row.proposedFee, currencyMode);
+              const isFirst = indexInGroup === 0;
+
+              return (
+                <div key={row.id} className="space-y-2 border border-gray-200 p-2">
+                  {isFirst && (
+                    <div className="grid grid-cols-[64px_minmax(0,1fr)] gap-2">
+                      <Input
+                        value={row.phaseNumber}
+                        onChange={e => updateGroupField(group, 'phaseNumber', e.target.value)}
+                        className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
+                        placeholder="1"
+                        aria-label={`Phase number ${groupIdx + 1}`}
+                      />
+                      <Input
+                        value={row.phaseName}
+                        onChange={e => updateGroupField(group, 'phaseName', e.target.value)}
+                        className="h-8 min-w-0 text-sm"
+                        placeholder="Discovery"
+                        aria-label={`Phase name ${groupIdx + 1}`}
+                      />
+                    </div>
+                  )}
+                  <Input
+                    value={row.deliverableName}
+                    onChange={e => updateRow(row.id, 'deliverableName', e.target.value)}
+                    className="h-8 min-w-0 text-sm"
+                    placeholder="Executive readout"
+                    aria-label="Deliverable name"
+                  />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      type="date"
+                      value={row.estimatedStartDate}
+                      onChange={e => updateRow(row.id, 'estimatedStartDate', e.target.value)}
+                      className="h-8 min-w-0 px-1.5 text-xs"
+                      aria-label="Estimated start date"
+                    />
+                    <Input
+                      type="date"
+                      value={row.estimatedEndDate}
+                      onChange={e => updateRow(row.id, 'estimatedEndDate', e.target.value)}
+                      className="h-8 min-w-0 px-1.5 text-xs"
+                      aria-label="Estimated end date"
+                    />
+                  </div>
+                  <div className="grid grid-cols-[minmax(0,1fr)_32px_32px] gap-1.5">
+                    <div className="relative min-w-0">
+                      <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">{sym}</span>
+                      <Input
+                        type="number"
+                        min={0}
+                        step={1000}
+                        value={displayFee || ''}
+                        onChange={e => updateRow(row.id, 'proposedFee', convertToUSD(Number(e.target.value) || 0, currencyMode))}
+                        className="h-8 min-w-0 pl-5 pr-1.5 text-right text-sm tabular-nums"
+                        placeholder="0"
+                        aria-label="Proposed fee"
+                      />
+                    </div>
+                    <Button variant="outline" size="icon" onClick={() => addDeliverable(row)} className="h-8 w-8" title="Add deliverable">
+                      <Plus className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      onClick={() => removeRow(row.id)}
+                      className="h-8 w-8 text-gray-300 hover:bg-red-50 hover:text-red-500"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+        <div className="hidden w-full overflow-hidden lg:block">
+          <table className="w-full table-fixed border-collapse text-sm">
             <thead>
               <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-400">
-                <th className="w-20 px-2 py-2">Phase #</th>
-                <th className="w-44 px-2 py-2">Phase Name</th>
-                <th className="w-56 px-2 py-2">Deliverable Name</th>
-                <th className="w-40 px-2 py-2">Estimated Start Date</th>
-                <th className="w-40 px-2 py-2">Estimated End Date</th>
-                <th className="w-36 px-2 py-2 text-right">Proposed Fee</th>
-                <th className="w-44 px-2 py-2 text-right">Actions</th>
+                <th className="w-[64px] px-1.5 py-2">Phase #</th>
+                <th className="w-[132px] px-1.5 py-2">Phase Name</th>
+                <th className="px-1.5 py-2">Deliverable Name</th>
+                <th className="w-[118px] px-1.5 py-2">Est. Start</th>
+                <th className="w-[118px] px-1.5 py-2">Est. End</th>
+                <th className="w-[112px] px-1.5 py-2 text-right">Proposed Fee</th>
+                <th className="w-[72px] px-1.5 py-2 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -143,50 +223,50 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
                     <tr key={row.id} className={`align-top ${groupBoundary} ${innerBoundary}`}>
                       {isFirst && (
                         <>
-                          <td className="px-2 py-2 bg-gray-50/60 align-top" rowSpan={group.length}>
+                          <td className="px-1.5 py-2 bg-gray-50/60 align-top" rowSpan={group.length}>
                             <Input
                               value={row.phaseNumber}
                               onChange={e => updateGroupField(group, 'phaseNumber', e.target.value)}
-                              className="h-8 text-sm tabular-nums"
+                              className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
                               placeholder="1"
                             />
                           </td>
-                          <td className="px-2 py-2 bg-gray-50/60 align-top" rowSpan={group.length}>
+                          <td className="px-1.5 py-2 bg-gray-50/60 align-top" rowSpan={group.length}>
                             <Input
                               value={row.phaseName}
                               onChange={e => updateGroupField(group, 'phaseName', e.target.value)}
-                              className="h-8 text-sm"
+                              className="h-8 min-w-0 text-sm"
                               placeholder="Discovery"
                             />
                           </td>
                         </>
                       )}
-                      <td className="px-2 py-2">
+                      <td className="px-1.5 py-2">
                         <Input
                           value={row.deliverableName}
                           onChange={e => updateRow(row.id, 'deliverableName', e.target.value)}
-                          className="h-8 text-sm"
+                          className="h-8 min-w-0 text-sm"
                           placeholder="Executive readout"
                         />
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-1.5 py-2">
                         <Input
                           type="date"
                           value={row.estimatedStartDate}
                           onChange={e => updateRow(row.id, 'estimatedStartDate', e.target.value)}
-                          className="h-8 text-sm"
+                          className="h-8 min-w-0 px-1.5 text-xs"
                         />
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-1.5 py-2">
                         <Input
                           type="date"
                           value={row.estimatedEndDate}
                           onChange={e => updateRow(row.id, 'estimatedEndDate', e.target.value)}
-                          className="h-8 text-sm"
+                          className="h-8 min-w-0 px-1.5 text-xs"
                         />
                       </td>
-                      <td className="px-2 py-2">
-                        <div className="relative">
+                      <td className="px-1.5 py-2">
+                        <div className="relative min-w-0">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">{sym}</span>
                           <Input
                             type="number"
@@ -194,16 +274,15 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
                             step={1000}
                             value={displayFee || ''}
                             onChange={e => updateRow(row.id, 'proposedFee', convertToUSD(Number(e.target.value) || 0, currencyMode))}
-                            className="h-8 pl-5 pr-2 text-right text-sm tabular-nums"
+                            className="h-8 min-w-0 pl-5 pr-1.5 text-right text-sm tabular-nums"
                             placeholder="0"
                           />
                         </div>
                       </td>
-                      <td className="px-2 py-2">
+                      <td className="px-1.5 py-2">
                         <div className="flex justify-end gap-1">
-                          <Button variant="outline" size="sm" onClick={() => addDeliverable(row)} className="h-8 text-xs">
-                            <Plus className="mr-1 h-3.5 w-3.5" />
-                            Deliverable
+                          <Button variant="outline" size="icon" onClick={() => addDeliverable(row)} className="h-8 w-8" title="Add deliverable">
+                            <Plus className="h-3.5 w-3.5" />
                           </Button>
                           <Button
                             size="icon"

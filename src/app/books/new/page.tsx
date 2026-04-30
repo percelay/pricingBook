@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
@@ -62,6 +62,10 @@ export default function NewBookPage() {
   const canSave = client.trim() && engagement.trim() && activeRateCardIds.length > 0 && lineItems.length > 0;
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
+  const teamGridTemplate = isHybrid
+    ? 'minmax(0, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.16fr) minmax(0, 0.42fr) minmax(0, 0.42fr) minmax(0, 0.58fr) minmax(0, 0.52fr) minmax(0, 0.72fr) 28px'
+    : 'minmax(0, 0.95fr) minmax(0, 1.25fr) minmax(0, 0.46fr) minmax(0, 0.46fr) minmax(0, 0.66fr) minmax(0, 0.58fr) minmax(0, 0.82fr) 28px';
+  const teamGridStyle = { '--team-grid-template': teamGridTemplate } as CSSProperties;
 
   function handleRateCardSelection(value: string) {
     const rateCardIds = rateCardIdsForSelection(value, rateCards);
@@ -156,7 +160,7 @@ export default function NewBookPage() {
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-6xl mx-auto">
+    <div className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
       <div className="flex items-center gap-3 mb-8">
         <Link href="/">
           <Button variant="ghost" size="icon">
@@ -169,8 +173,8 @@ export default function NewBookPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <div className="space-y-5 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+        <div className="space-y-5">
           <Card>
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Engagement Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -194,10 +198,10 @@ export default function NewBookPage() {
 
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-sm font-semibold text-gray-700">Team & Fees</CardTitle>
                 <Select onValueChange={v => v && addRole(v)} value={null}>
-                  <SelectTrigger className="w-44 h-8 text-sm">
+                  <SelectTrigger className="h-8 w-full text-sm sm:w-44">
                     <SelectValue placeholder="+ Add role" />
                   </SelectTrigger>
                   <SelectContent>
@@ -214,30 +218,29 @@ export default function NewBookPage() {
                   Add team roles using the dropdown above
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <div className={`${isHybrid ? 'min-w-[940px]' : 'min-w-[740px]'} space-y-2`}>
-                    <div className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 px-1 mb-1`}>
+                <div className="space-y-2">
+                  <div className="mb-1 hidden gap-1.5 px-1 lg:grid lg:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
                     {(isHybrid ? ['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''] : ['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', '']).map(h => (
-                      <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
+                      <span key={h} className="min-w-0 truncate text-xs font-medium text-gray-400">{h}</span>
                     ))}
-                    </div>
+                  </div>
                   {lineItems.map(item => {
                     const sub = lineSubtotal(item);
                     const uniform = isUniform(item.days);
                     const avgDpw = averageDaysPerWeek(item.days);
                     const itemRateCardId = activeRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : activeRateCardIds[0] ?? '';
                     return (
-                      <div key={item.id} className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 items-center`}>
-                        <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
+                      <div key={item.id} className="grid grid-cols-2 items-center gap-1.5 border border-gray-100 p-2 lg:border-0 lg:p-0 lg:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
+                        <Badge variant="secondary" className="block max-w-full truncate text-xs">{item.role}</Badge>
                         <Input
                           placeholder="Consultant name"
                           value={item.name}
                           onChange={e => updateField(item.id, 'name', e.target.value)}
-                          className="h-8 text-sm"
+                          className="h-8 min-w-0 text-sm"
                         />
                         {isHybrid && (
                           <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
-                            <SelectTrigger className="h-8 w-full text-sm">
+                            <SelectTrigger className="h-8 min-w-0 w-full text-sm">
                               <SelectValue placeholder="Rate card">
                                 {(v: string) => {
                                   const card = rateCards.find(c => c.id === v);
@@ -258,7 +261,7 @@ export default function NewBookPage() {
                           type="number" min={0}
                           value={item.days.length || ''}
                           onChange={e => updateWeeks(item.id, e.target.value)}
-                          className="h-8 text-sm px-2 tabular-nums"
+                          className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
                         />
                         <Input
                           type="number" min={0} max={7} step={0.5}
@@ -266,31 +269,30 @@ export default function NewBookPage() {
                           placeholder={uniform ? '' : avgDpw.toFixed(1)}
                           onChange={e => updateDpw(item.id, e.target.value)}
                           title={uniform ? '' : `Mixed allocation — avg ${avgDpw.toFixed(1)}/wk. Edit to reset to uniform.`}
-                          className="h-8 text-sm px-2 tabular-nums"
+                          className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
                         />
-                        <div className="relative">
+                        <div className="relative min-w-0">
                           <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
                           <Input
                             type="number" min={0} step={mode === 'hourly' ? 5 : 50}
                             value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
                             onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
-                            className="h-8 text-sm pl-5 pr-1 tabular-nums"
+                            className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
                             placeholder="0"
                           />
                         </div>
-                        <span className="text-xs text-gray-400 tabular-nums text-right pr-1">
+                        <span className="min-w-0 truncate text-right text-xs tabular-nums text-gray-400">
                           {sym}{toDisplayValue(item.dailyCost, mode, currencyMode).toLocaleString('en-US', { maximumFractionDigits: 2 })}
                         </span>
-                        <span className="text-sm font-semibold text-right text-gray-900 tabular-nums pr-1">
+                        <span className="min-w-0 truncate text-right text-sm font-semibold tabular-nums text-gray-900">
                           {formatMoney(sub, currencyMode)}
                         </span>
-                        <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-7 w-7 text-gray-300 hover:text-red-500 hover:bg-red-50">
+                        <Button size="icon" variant="ghost" onClick={() => removeItem(item.id)} className="h-7 w-7 justify-self-end text-gray-300 hover:text-red-500 hover:bg-red-50">
                           <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
                     );
                   })}
-                  </div>
                 </div>
               )}
             </CardContent>
