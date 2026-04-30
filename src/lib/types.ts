@@ -82,6 +82,7 @@ export interface PricingBookData {
   markup: number;
   tePercent: number;
   lineItems: LineItem[];
+  showWeeklyAllocation?: boolean;
   phasedPricing?: PhasedPricingRow[];
   notes: string;
 }

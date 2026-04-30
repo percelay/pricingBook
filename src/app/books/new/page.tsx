@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Trash2, TrendingUp, Target } from 'lucide-react';
+import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
 import { getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { RateCard, LineItem, ROLES, Region, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow } from '@/lib/types';
@@ -13,6 +13,7 @@ import {
 } from '@/lib/calculations';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
+import { shouldShowWeeklyAllocation } from '@/lib/weekly-allocation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -39,6 +40,7 @@ export default function NewBookPage() {
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
+  const [showWeeklyAllocation, setShowWeeklyAllocation] = useState(false);
   const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
   const [notes, setNotes] = useState('');
 
@@ -53,6 +55,7 @@ export default function NewBookPage() {
     const card = rateCards.find(c => c.region === r);
     if (card) setRateCardId(card.id);
     setLineItems([]);
+    setShowWeeklyAllocation(false);
   }
 
   function addRole(role: string) {
@@ -102,7 +105,11 @@ export default function NewBookPage() {
   }
 
   function removeItem(id: string) {
-    setLineItems(items => items.filter(item => item.id !== id));
+    setLineItems(items => {
+      const next = items.filter(item => item.id !== id);
+      if (next.length === 0) setShowWeeklyAllocation(false);
+      return next;
+    });
   }
 
   function handleSave(status: 'Draft' | 'Final') {
@@ -119,6 +126,7 @@ export default function NewBookPage() {
       markup,
       tePercent,
       lineItems,
+      showWeeklyAllocation,
       phasedPricing,
       notes,
       versions: [],
@@ -389,10 +397,18 @@ export default function NewBookPage() {
 
       {lineItems.length > 0 && (
         <div className="mt-6">
-          <EditableTimeline
-            lineItems={lineItems}
-            onChangeDays={(id, days) => updateField(id, 'days', days)}
-          />
+          {shouldShowWeeklyAllocation(showWeeklyAllocation, lineItems) ? (
+            <EditableTimeline
+              lineItems={lineItems}
+              onChangeDays={(id, days) => updateField(id, 'days', days)}
+              onRemoveSection={() => setShowWeeklyAllocation(false)}
+            />
+          ) : (
+            <Button variant="outline" onClick={() => setShowWeeklyAllocation(true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add weekly allocation
+            </Button>
+          )}
           <PhasedPricing
             rows={phasedPricing}
             currencyMode={currencyMode}

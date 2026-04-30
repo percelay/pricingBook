@@ -372,6 +372,8 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 }
 
 function addWeeklyAllocationSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
+  if (!book.showWeeklyAllocation) return;
+
   const weekCount = Math.max(1, book.lineItems.reduce((max, item) => Math.max(max, item.days.length), 0));
   const worksheet = workbook.addWorksheet('Weekly Allocation', {
     properties: { tabColor: { argb: `FF${COLORS.sand}` } },

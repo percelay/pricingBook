@@ -3,7 +3,7 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Download, History, Trash2, Check, Save, TrendingUp, Target } from 'lucide-react';
+import { ArrowLeft, Download, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
@@ -15,6 +15,7 @@ import {
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
 import { exportBookToExcel } from '@/lib/export';
+import { shouldShowWeeklyAllocation } from '@/lib/weekly-allocation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -129,7 +130,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   }
 
   function removeLineItem(itemId: string) {
-    setBook(b => b ? { ...b, lineItems: b.lineItems.filter(i => i.id !== itemId) } : b);
+    setBook(b => {
+      if (!b) return b;
+      const lineItems = b.lineItems.filter(i => i.id !== itemId);
+      return {
+        ...b,
+        lineItems,
+        showWeeklyAllocation: lineItems.length > 0 ? b.showWeeklyAllocation : false,
+      };
+    });
     setDirty(true);
   }
 
@@ -149,7 +158,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             client: book.client, engagement: book.engagement, region: book.region,
             baseRateCardId: book.baseRateCardId, baseRateCardName: book.baseRateCardName,
             status, discount: book.discount, markup: book.markup, tePercent: book.tePercent,
-            lineItems: book.lineItems, phasedPricing: book.phasedPricing, notes: book.notes,
+            lineItems: book.lineItems, showWeeklyAllocation: book.showWeeklyAllocation, phasedPricing: book.phasedPricing, notes: book.notes,
           },
         },
       ],
@@ -482,10 +491,18 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
       {/* Editable weekly timeline */}
       {book.lineItems.length > 0 && (
         <div className="mt-6">
-          <EditableTimeline
-            lineItems={book.lineItems}
-            onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
-          />
+          {shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) ? (
+            <EditableTimeline
+              lineItems={book.lineItems}
+              onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
+              onRemoveSection={() => patch('showWeeklyAllocation', false)}
+            />
+          ) : (
+            <Button variant="outline" onClick={() => patch('showWeeklyAllocation', true)}>
+              <Plus className="mr-1.5 h-4 w-4" />
+              Add weekly allocation
+            </Button>
+          )}
           <PhasedPricing
             rows={book.phasedPricing}
             currencyMode={currencyMode}
