@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
 import { getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, LineItem, ROLES, BookRegion, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, BOOK_REGION_FLAG } from '@/lib/types';
+import { RateCard, LineItem, ROLES, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, REGION_FLAG } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, toDisplayValue, fromInputValue,
   rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays, currencySymbol,
@@ -15,7 +15,9 @@ import {
   applyRateCardToLineItem,
   buildLineItemFromRateCard,
   describeRateCardSelection,
-  normalizeRateCardIds,
+  HYBRID_RATE_CARD_ID,
+  isHybridRateCardSelection,
+  rateCardIdsForSelection,
   reassignLineItemsToAvailableCards,
   selectedRateCards,
 } from '@/lib/rate-card-selection';
@@ -43,12 +45,7 @@ export default function NewBookPage() {
   });
   const [client, setClient] = useState('');
   const [engagement, setEngagement] = useState('');
-  const [region, setRegion] = useState<BookRegion>('US');
-  const [rateCardId, setRateCardId] = useState(() => rateCards.find(c => c.region === 'US')?.id ?? '');
-  const [selectedRateCardIds, setSelectedRateCardIds] = useState<string[]>(() => {
-    const usCardId = rateCards.find(c => c.region === 'US')?.id;
-    return normalizeRateCardIds([usCardId], rateCards);
-  });
+  const [rateCardSelection, setRateCardSelection] = useState(() => rateCards[0]?.id ?? '');
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
@@ -57,12 +54,8 @@ export default function NewBookPage() {
   const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
   const [notes, setNotes] = useState('');
 
-  const availableRateCards = region === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === region);
-  const activeRateCardIds = normalizeRateCardIds(
-    region === 'Hybrid' ? selectedRateCardIds : [rateCardId],
-    availableRateCards,
-    rateCardId
-  );
+  const isHybrid = isHybridRateCardSelection(rateCardSelection);
+  const activeRateCardIds = rateCardIdsForSelection(rateCardSelection, rateCards);
   const activeRateCards = selectedRateCards(rateCards, activeRateCardIds);
   const selectedCard = activeRateCards[0];
   const totals = calcTotals(lineItems, discount, markup, tePercent);
@@ -70,39 +63,10 @@ export default function NewBookPage() {
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
 
-  function applyRateCardSelection(nextRegion: BookRegion, ids: Array<string | undefined>) {
-    const scopedCards = nextRegion === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === nextRegion);
-    const normalizedIds = normalizeRateCardIds(ids, scopedCards, ids[0] ?? rateCardId);
-
-    setRegion(nextRegion);
-    setRateCardId(normalizedIds[0] ?? '');
-    setSelectedRateCardIds(normalizedIds);
-    setLineItems(items => reassignLineItemsToAvailableCards(items, rateCards, normalizedIds));
-  }
-
-  function handleRegionChange(nextRegion: BookRegion) {
-    if (nextRegion === 'Hybrid') {
-      const usCardId = rateCards.find(card => card.region === 'US')?.id;
-      const franceCardId = rateCards.find(card => card.region === 'France')?.id;
-      applyRateCardSelection('Hybrid', [...activeRateCardIds, usCardId, franceCardId]);
-      return;
-    }
-
-    applyRateCardSelection(nextRegion, [rateCards.find(card => card.region === nextRegion)?.id]);
-  }
-
-  function handleSingleRateCardChange(id: string) {
-    const card = rateCards.find(c => c.id === id);
-    if (!card) return;
-    applyRateCardSelection(card.region, [card.id]);
-  }
-
-  function toggleHybridRateCard(id: string) {
-    const nextIds = activeRateCardIds.includes(id)
-      ? activeRateCardIds.filter(existingId => existingId !== id)
-      : [...activeRateCardIds, id];
-
-    applyRateCardSelection('Hybrid', nextIds);
+  function handleRateCardSelection(value: string) {
+    const rateCardIds = rateCardIdsForSelection(value, rateCards);
+    setRateCardSelection(value);
+    setLineItems(items => reassignLineItemsToAvailableCards(items, rateCards, rateCardIds));
   }
 
   function addRole(role: string) {
@@ -164,13 +128,14 @@ export default function NewBookPage() {
   function handleSave(status: 'Draft' | 'Final') {
     if (!canSave) return;
     const bookRateCardIds = activeRateCardIds;
+    const bookIsHybrid = isHybridRateCardSelection(rateCardSelection);
     const book: PricingBook = {
       id: crypto.randomUUID(),
       client: client.trim(),
       engagement: engagement.trim(),
-      region,
-      baseRateCardId: bookRateCardIds[0] ?? '',
-      baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds),
+      region: bookIsHybrid ? 'Hybrid' : selectedCard?.region ?? 'US',
+      baseRateCardId: bookIsHybrid ? HYBRID_RATE_CARD_ID : bookRateCardIds[0] ?? '',
+      baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds, bookIsHybrid),
       selectedRateCardIds: bookRateCardIds,
       status,
       discount,
@@ -219,18 +184,11 @@ export default function NewBookPage() {
                   <Input placeholder="Digital Transformation" value={engagement} onChange={e => setEngagement(e.target.value)} />
                 </div>
               </div>
-              <div>
-                <div>
-                  <RateCardSelector
-                    region={region}
-                    rateCards={rateCards}
-                    selectedRateCardIds={activeRateCardIds}
-                    onRegionChange={handleRegionChange}
-                    onSingleRateCardChange={handleSingleRateCardChange}
-                    onToggleRateCard={toggleHybridRateCard}
-                  />
-                </div>
-              </div>
+              <RateCardSelector
+                value={rateCardSelection}
+                rateCards={rateCards}
+                onChange={handleRateCardSelection}
+              />
             </CardContent>
           </Card>
 
@@ -257,9 +215,9 @@ export default function NewBookPage() {
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="min-w-[940px] space-y-2">
-                    <div className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 px-1 mb-1">
-                    {['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
+                  <div className={`${isHybrid ? 'min-w-[940px]' : 'min-w-[740px]'} space-y-2`}>
+                    <div className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 px-1 mb-1`}>
+                    {(isHybrid ? ['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''] : ['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', '']).map(h => (
                       <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                     ))}
                     </div>
@@ -269,7 +227,7 @@ export default function NewBookPage() {
                     const avgDpw = averageDaysPerWeek(item.days);
                     const itemRateCardId = activeRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : activeRateCardIds[0] ?? '';
                     return (
-                      <div key={item.id} className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 items-center">
+                      <div key={item.id} className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 items-center`}>
                         <Badge variant="secondary" className="text-xs max-w-full truncate block w-fit">{item.role}</Badge>
                         <Input
                           placeholder="Consultant name"
@@ -277,23 +235,25 @@ export default function NewBookPage() {
                           onChange={e => updateField(item.id, 'name', e.target.value)}
                           className="h-8 text-sm"
                         />
-                        <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
-                          <SelectTrigger className="h-8 w-full text-sm">
-                            <SelectValue placeholder="Rate card">
-                              {(v: string) => {
-                                const card = rateCards.find(c => c.id === v);
-                                return card ? `${BOOK_REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            {activeRateCards.map(card => (
-                              <SelectItem key={card.id} value={card.id}>
-                                {BOOK_REGION_FLAG[card.region]} {card.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        {isHybrid && (
+                          <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                            <SelectTrigger className="h-8 w-full text-sm">
+                              <SelectValue placeholder="Rate card">
+                                {(v: string) => {
+                                  const card = rateCards.find(c => c.id === v);
+                                  return card ? `${REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                                }}
+                              </SelectValue>
+                            </SelectTrigger>
+                            <SelectContent>
+                              {rateCards.map(card => (
+                                <SelectItem key={card.id} value={card.id}>
+                                  {REGION_FLAG[card.region]} {card.name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
                         <Input
                           type="number" min={0}
                           value={item.days.length || ''}

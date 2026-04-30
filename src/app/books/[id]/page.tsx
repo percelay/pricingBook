@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { ArrowLeft, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
 import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, BookRegion, BOOK_REGION_FLAG } from '@/lib/types';
+import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, lineCost, totalDays,
   toDisplayValue, fromInputValue, rateUnit, isUniform, averageDaysPerWeek,
@@ -16,7 +16,10 @@ import {
   applyRateCardToLineItem,
   buildLineItemFromRateCard,
   describeRateCardSelection,
+  HYBRID_RATE_CARD_ID,
+  isHybridRateCardSelection,
   normalizeRateCardIds,
+  rateCardIdsForSelection,
   reassignLineItemsToAvailableCards,
   selectedRateCards,
 } from '@/lib/rate-card-selection';
@@ -62,11 +65,17 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const totals = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
-  const selectedRateCardIds = normalizeRateCardIds(
+  const savedRateCardIds = normalizeRateCardIds(
     book.selectedRateCardIds ?? [book.baseRateCardId, ...book.lineItems.map(item => item.rateCardId)],
     rateCards,
     book.baseRateCardId
   );
+  const rateCardSelection =
+    book.baseRateCardId === HYBRID_RATE_CARD_ID || book.region === 'Hybrid' || (book.selectedRateCardIds?.length ?? 0) > 1
+      ? HYBRID_RATE_CARD_ID
+      : savedRateCardIds[0] ?? '';
+  const isHybrid = isHybridRateCardSelection(rateCardSelection);
+  const selectedRateCardIds = isHybrid ? rateCards.map(card => card.id) : savedRateCardIds;
   const activeRateCards = selectedRateCards(rateCards, selectedRateCardIds);
 
   function patch<K extends keyof PricingBook>(field: K, value: PricingBook[K]) {
@@ -92,47 +101,23 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     updateLineItemField(itemId, field, fromInputValue(num, mode, currencyMode));
   }
 
-  function updateRateCardSelection(nextRegion: BookRegion, ids: Array<string | undefined>) {
-    const scopedCards = nextRegion === 'Hybrid' ? rateCards : rateCards.filter(card => card.region === nextRegion);
-    const normalizedIds = normalizeRateCardIds(ids, scopedCards, ids[0]);
+  function updateRateCardSelection(selection: string) {
+    const normalizedIds = rateCardIdsForSelection(selection, rateCards);
+    const hybrid = isHybridRateCardSelection(selection);
+    const selectedCard = selectedRateCards(rateCards, normalizedIds)[0];
 
     setBook(b => {
       if (!b) return b;
       return {
         ...b,
-        region: nextRegion,
-        baseRateCardId: normalizedIds[0] ?? '',
-        baseRateCardName: describeRateCardSelection(rateCards, normalizedIds),
+        region: hybrid ? 'Hybrid' : selectedCard?.region ?? b.region,
+        baseRateCardId: hybrid ? HYBRID_RATE_CARD_ID : normalizedIds[0] ?? '',
+        baseRateCardName: describeRateCardSelection(rateCards, normalizedIds, hybrid),
         selectedRateCardIds: normalizedIds,
         lineItems: reassignLineItemsToAvailableCards(b.lineItems, rateCards, normalizedIds),
       };
     });
     setDirty(true);
-  }
-
-  function handleRegionChange(nextRegion: BookRegion) {
-    if (nextRegion === 'Hybrid') {
-      const usCardId = rateCards.find(card => card.region === 'US')?.id;
-      const franceCardId = rateCards.find(card => card.region === 'France')?.id;
-      updateRateCardSelection('Hybrid', [...selectedRateCardIds, usCardId, franceCardId]);
-      return;
-    }
-
-    updateRateCardSelection(nextRegion, [rateCards.find(card => card.region === nextRegion)?.id]);
-  }
-
-  function handleSingleRateCardChange(id: string) {
-    const card = rateCards.find(c => c.id === id);
-    if (!card) return;
-    updateRateCardSelection(card.region, [card.id]);
-  }
-
-  function toggleHybridRateCard(id: string) {
-    const nextIds = selectedRateCardIds.includes(id)
-      ? selectedRateCardIds.filter(existingId => existingId !== id)
-      : [...selectedRateCardIds, id];
-
-    updateRateCardSelection('Hybrid', nextIds);
   }
 
   function updateLineItemRateCard(itemId: string, cardId: string) {
@@ -214,10 +199,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     if (!book) return;
     const status = overrideStatus ?? book.status;
     const bookRateCardIds = selectedRateCardIds;
+    const bookIsHybrid = isHybridRateCardSelection(rateCardSelection);
+    const updatedRegion = bookIsHybrid ? 'Hybrid' : activeRateCards[0]?.region ?? book.region;
+    const updatedRateCardId = bookIsHybrid ? HYBRID_RATE_CARD_ID : bookRateCardIds[0] ?? book.baseRateCardId;
+    const updatedRateCardName = describeRateCardSelection(rateCards, bookRateCardIds, bookIsHybrid) || book.baseRateCardName;
     const updated: PricingBook = {
       ...book,
-      baseRateCardId: bookRateCardIds[0] ?? book.baseRateCardId,
-      baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds) || book.baseRateCardName,
+      region: updatedRegion,
+      baseRateCardId: updatedRateCardId,
+      baseRateCardName: updatedRateCardName,
       selectedRateCardIds: bookRateCardIds,
       status,
       updatedAt: new Date().toISOString(),
@@ -227,9 +217,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           version: book.versions.length + 1,
           savedAt: new Date().toISOString(),
           snapshot: {
-            client: book.client, engagement: book.engagement, region: book.region,
-            baseRateCardId: bookRateCardIds[0] ?? book.baseRateCardId,
-            baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds) || book.baseRateCardName,
+            client: book.client, engagement: book.engagement, region: updatedRegion,
+            baseRateCardId: updatedRateCardId,
+            baseRateCardName: updatedRateCardName,
             selectedRateCardIds: bookRateCardIds,
             status, discount: book.discount, markup: book.markup, tePercent: book.tePercent,
             lineItems: book.lineItems, showWeeklyAllocation: book.showWeeklyAllocation, phasedPricing: book.phasedPricing, notes: book.notes,
@@ -270,9 +260,6 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="text-2xl font-bold text-gray-900">{book.client}</h1>
               <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>{book.status}</Badge>
-              <Badge variant="outline" className="font-normal">
-                {BOOK_REGION_FLAG[book.region]} {book.region}
-              </Badge>
             </div>
             <p className="text-gray-500 mt-1">{book.engagement}</p>
             <p className="text-xs text-gray-400 mt-0.5">Rate cards: {book.baseRateCardName}</p>
@@ -348,12 +335,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Rate Card Setup</CardTitle></CardHeader>
             <CardContent>
               <RateCardSelector
-                region={book.region}
+                value={rateCardSelection}
                 rateCards={rateCards}
-                selectedRateCardIds={selectedRateCardIds}
-                onRegionChange={handleRegionChange}
-                onSingleRateCardChange={handleSingleRateCardChange}
-                onToggleRateCard={toggleHybridRateCard}
+                onChange={updateRateCardSelection}
               />
             </CardContent>
           </Card>
@@ -380,9 +364,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                 </div>
               ) : (
                 <div className="overflow-x-auto">
-                  <div className="min-w-[940px] space-y-2">
-                    <div className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 px-1 mb-1">
-                      {['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''].map(h => (
+                  <div className={`${isHybrid ? 'min-w-[940px]' : 'min-w-[740px]'} space-y-2`}>
+                    <div className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 px-1 mb-1`}>
+                      {(isHybrid ? ['Role', 'Consultant', 'Rate Card', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', ''] : ['Role', 'Consultant', 'Weeks', 'd/wk', `Rate/${unit}`, `Cost/${unit}`, 'Subtotal', '']).map(h => (
                         <span key={h} className="text-xs font-medium text-gray-400">{h}</span>
                       ))}
                     </div>
@@ -392,7 +376,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                       const avgDpw = averageDaysPerWeek(item.days);
                       const itemRateCardId = selectedRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : selectedRateCardIds[0] ?? '';
                       return (
-                        <div key={item.id} className="grid grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px] gap-2 items-center">
+                        <div key={item.id} className={`grid ${isHybrid ? 'grid-cols-[132px_1fr_190px_54px_54px_82px_82px_88px_28px]' : 'grid-cols-[132px_1fr_54px_54px_82px_82px_88px_28px]'} gap-2 items-center`}>
                           <span className="text-sm font-medium text-gray-800 truncate">{item.role}</span>
                           <Input
                             placeholder="Consultant name"
@@ -400,23 +384,25 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                             onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
                             className="h-8 text-sm"
                           />
-                          <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
-                            <SelectTrigger className="h-8 w-full text-sm">
-                              <SelectValue placeholder="Rate card">
-                                {(v: string) => {
-                                  const card = rateCards.find(c => c.id === v);
-                                  return card ? `${BOOK_REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
-                                }}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {activeRateCards.map(card => (
-                                <SelectItem key={card.id} value={card.id}>
-                                  {BOOK_REGION_FLAG[card.region]} {card.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          {isHybrid && (
+                            <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
+                              <SelectTrigger className="h-8 w-full text-sm">
+                                <SelectValue placeholder="Rate card">
+                                  {(v: string) => {
+                                    const card = rateCards.find(c => c.id === v);
+                                    return card ? `${REGION_FLAG[card.region]} ${card.name}` : 'Rate card';
+                                  }}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {rateCards.map(card => (
+                                  <SelectItem key={card.id} value={card.id}>
+                                    {REGION_FLAG[card.region]} {card.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
                           <Input
                             type="number" min={0}
                             value={item.days.length || ''}

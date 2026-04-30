@@ -1,5 +1,11 @@
-import { LineItem, RateCard, Role, BookRegion } from './types';
+import { LineItem, RateCard, Role } from './types';
 import { uniformDays } from './calculations';
+
+export const HYBRID_RATE_CARD_ID = '__hybrid__';
+
+export function isHybridRateCardSelection(value: string): boolean {
+  return value === HYBRID_RATE_CARD_ID;
+}
 
 export function normalizeRateCardIds(
   ids: Array<string | undefined>,
@@ -19,17 +25,17 @@ export function selectedRateCards(cards: RateCard[], ids: string[]): RateCard[] 
   return cards.filter(card => selected.has(card.id));
 }
 
-export function describeRateCardSelection(cards: RateCard[], ids: string[]): string {
+export function rateCardIdsForSelection(selection: string, cards: RateCard[]): string[] {
+  if (isHybridRateCardSelection(selection)) return cards.map(card => card.id);
+  return normalizeRateCardIds([selection], cards);
+}
+
+export function describeRateCardSelection(cards: RateCard[], ids: string[], hybrid = false): string {
+  if (hybrid) return 'Hybrid';
   const selected = selectedRateCards(cards, ids);
   if (selected.length === 0) return '';
   if (selected.length === 1) return selected[0].name;
   return `Hybrid: ${selected.map(card => card.name).join(' + ')}`;
-}
-
-export function bookRegionForRateCards(cards: RateCard[]): BookRegion {
-  if (cards.length === 0) return 'US';
-  const regions = new Set(cards.map(card => card.region));
-  return regions.size === 1 ? cards[0].region : 'Hybrid';
 }
 
 export function applyRateCardToLineItem(item: LineItem, card: RateCard | undefined): LineItem {

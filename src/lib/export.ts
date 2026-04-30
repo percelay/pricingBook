@@ -177,18 +177,18 @@ function styleLineItemTable(worksheet: ExcelJS.Worksheet, firstRow: number, last
     };
   });
 
-  applyRange(worksheet, firstRow + 1, 1, lastRow, 11, cell => {
+  applyRange(worksheet, firstRow + 1, 1, lastRow, 10, cell => {
     cell.border = THIN_BORDER;
     cell.alignment = { vertical: 'middle', wrapText: true };
   });
 
   for (let row = firstRow + 1; row <= lastRow; row += 1) {
     const isEven = (row - firstRow) % 2 === 0;
-    applyRange(worksheet, row, 1, row, 11, cell => {
+    applyRange(worksheet, row, 1, row, 10, cell => {
       cell.fill = fill(isEven ? COLORS.sandLight : COLORS.white);
     });
-    [5, 6, 7].forEach(col => styleInput(worksheet.getCell(row, col), col === 5 ? NUMBER_FORMAT : MONEY_FORMAT));
-    [8, 9, 10, 11].forEach(col => styleFormula(worksheet.getCell(row, col), col === 11 ? PERCENT_FORMAT : MONEY_FORMAT));
+    [4, 5, 6].forEach(col => styleInput(worksheet.getCell(row, col), col === 4 ? NUMBER_FORMAT : MONEY_FORMAT));
+    [7, 8, 9, 10].forEach(col => styleFormula(worksheet.getCell(row, col), col === 10 ? PERCENT_FORMAT : MONEY_FORMAT));
   }
 }
 
@@ -197,7 +197,6 @@ function setColumnWidths(worksheet: ExcelJS.Worksheet) {
     { key: 'role', width: 20 },
     { key: 'consultant', width: 24 },
     { key: 'rateCard', width: 30 },
-    { key: 'region', width: 12 },
     { key: 'days', width: 12 },
     { key: 'rate', width: 14 },
     { key: 'costRate', width: 14 },
@@ -234,7 +233,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 
   setColumnWidths(worksheet);
 
-  worksheet.mergeCells('A1:K1');
+  worksheet.mergeCells('A1:J1');
   const title = worksheet.getCell('A1');
   title.value = 'probook Pricing Model';
   title.font = { bold: true, size: 18, color: { argb: `FF${COLORS.white}` } };
@@ -243,7 +242,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   title.border = SECTION_BORDER;
   worksheet.getRow(1).height = 30;
 
-  worksheet.mergeCells('A2:K2');
+  worksheet.mergeCells('A2:J2');
   const subtitle = worksheet.getCell('A2');
   subtitle.value = `${book.client} - ${book.engagement}`;
   subtitle.font = { italic: true, color: { argb: `FF${COLORS.grayText}` } };
@@ -252,8 +251,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   setMetadataPair(worksheet, 4, 1, 'Client', book.client);
   setMetadataPair(worksheet, 4, 4, 'Engagement', book.engagement);
   setMetadataPair(worksheet, 4, 8, 'Status', book.status);
-  setMetadataPair(worksheet, 5, 1, 'Region', book.region);
-  setMetadataPair(worksheet, 5, 4, 'Rate Card(s)', book.baseRateCardName);
+  setMetadataPair(worksheet, 5, 1, 'Rate Card', book.baseRateCardName);
   setMetadataPair(worksheet, 5, 8, 'Currency', CURRENCY);
   setMetadataPair(worksheet, 6, 1, 'Generated', new Date());
 
@@ -297,7 +295,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
     formula('IF(SUM(LineItems[Total Days])=0,0,J9/SUM(LineItems[Total Days]))', totals.averageDailyRate)
   );
 
-  styleSectionTitle(worksheet, 22, 1, 11);
+  styleSectionTitle(worksheet, 22, 1, 10);
   worksheet.getCell('A22').value = 'Line Items - Editable Driver Table';
 
   const tableStartRow = 23;
@@ -311,7 +309,6 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
       item.role,
       item.name || '',
       item.rateCardName ?? book.baseRateCardName,
-      item.rateCardRegion ?? (book.region === 'Hybrid' ? '' : book.region),
       totalDays(item),
       item.dailyRate,
       item.dailyCost,
@@ -336,7 +333,6 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
       { name: 'Role', filterButton: true },
       { name: 'Consultant', filterButton: true },
       { name: 'Rate Card', filterButton: true },
-      { name: 'Region', filterButton: true },
       { name: 'Total Days', filterButton: true },
       { name: 'Daily Rate', filterButton: true },
       { name: 'Daily Cost', filterButton: true },
@@ -350,18 +346,18 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
 
   const lastTableRow = tableStartRow + Math.max(tableRows.length, 1);
   styleLineItemTable(worksheet, tableStartRow, lastTableRow);
-  applyRange(worksheet, tableStartRow + 1, 6, lastTableRow, 10, cell => {
+  applyRange(worksheet, tableStartRow + 1, 5, lastTableRow, 9, cell => {
     cell.numFmt = MONEY_FORMAT;
   });
-  applyRange(worksheet, tableStartRow + 1, 5, lastTableRow, 5, cell => {
+  applyRange(worksheet, tableStartRow + 1, 4, lastTableRow, 4, cell => {
     cell.numFmt = NUMBER_FORMAT;
   });
-  applyRange(worksheet, tableStartRow + 1, 11, lastTableRow, 11, cell => {
+  applyRange(worksheet, tableStartRow + 1, 10, lastTableRow, 10, cell => {
     cell.numFmt = PERCENT_FORMAT;
   });
 
   const inputLegendRow = lastTableRow + 3;
-  worksheet.mergeCells(inputLegendRow, 1, inputLegendRow, 11);
+  worksheet.mergeCells(inputLegendRow, 1, inputLegendRow, 10);
   const legend = worksheet.getCell(inputLegendRow, 1);
   legend.value = 'Green cells are handoff inputs; blue cells are formulas. Add new roles inside the LineItems table so the summary formulas continue to expand automatically.';
   legend.fill = fill(COLORS.greenLight);
@@ -374,7 +370,7 @@ function addPricingModelSheet(workbook: ExcelJS.Workbook, book: PricingBook) {
   worksheet.headerFooter.oddFooter = '&LConfidential&RPage &P of &N';
   worksheet.autoFilter = {
     from: { row: tableStartRow, column: 1 },
-    to: { row: lastTableRow, column: 11 },
+    to: { row: lastTableRow, column: 10 },
   };
 }
 

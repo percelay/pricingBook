@@ -6,7 +6,7 @@ import { Plus, Search, FileText } from 'lucide-react';
 import { getPricingBooks } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { calcTotals, formatMoney } from '@/lib/calculations';
-import { PricingBook, BOOK_REGION_FLAG } from '@/lib/types';
+import { PricingBook } from '@/lib/types';
 import { useCurrencyMode } from '@/lib/currency-mode';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,14 +21,12 @@ export default function Dashboard() {
   });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [regionFilter, setRegionFilter] = useState('all');
 
   const filtered = books.filter(b => {
     const q = search.toLowerCase();
     const matchSearch = b.client.toLowerCase().includes(q) || b.engagement.toLowerCase().includes(q);
     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
-    const matchRegion = regionFilter === 'all' || b.region === regionFilter;
-    return matchSearch && matchStatus && matchRegion;
+    return matchSearch && matchStatus;
   });
 
   return (
@@ -61,18 +59,6 @@ export default function Dashboard() {
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="Draft">Draft</SelectItem>
             <SelectItem value="Final">Final</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select value={regionFilter} onValueChange={v => setRegionFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            <SelectItem value="US">US</SelectItem>
-            <SelectItem value="France">France</SelectItem>
-            <SelectItem value="England">England</SelectItem>
-            <SelectItem value="Hybrid">Hybrid</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -118,9 +104,6 @@ function BookCard({ book }: { book: PricingBook }) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-sm">
-            <Badge variant="outline" className="text-xs font-normal">
-              {BOOK_REGION_FLAG[book.region]} {book.region}
-            </Badge>
             <span className="text-gray-400 text-xs">{book.lineItems.length} roles</span>
             {book.versions.length > 0 && (
               <span className="text-gray-400 text-xs">v{book.versions.length}</span>

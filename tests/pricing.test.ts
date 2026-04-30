@@ -11,7 +11,9 @@ import {
 import { buildBookWorkbook } from '../src/lib/export';
 import {
   buildLineItemFromRateCard,
+  HYBRID_RATE_CARD_ID,
   normalizeRateCardIds,
+  rateCardIdsForSelection,
   reassignLineItemsToAvailableCards,
 } from '../src/lib/rate-card-selection';
 import { canAddWeeklyAllocation, shouldShowWeeklyAllocation } from '../src/lib/weekly-allocation';
@@ -218,6 +220,8 @@ test('hybrid rate card selection dedupes, falls back, and reassigns removed card
 
   assert.deepEqual(normalizeRateCardIds(['missing', 'rc-us', 'rc-us', 'rc-fr'], cards), ['rc-us', 'rc-fr']);
   assert.deepEqual(normalizeRateCardIds([], cards, 'rc-fr'), ['rc-fr']);
+  assert.deepEqual(rateCardIdsForSelection(HYBRID_RATE_CARD_ID, cards), ['rc-us', 'rc-fr']);
+  assert.deepEqual(rateCardIdsForSelection('rc-fr', cards), ['rc-fr']);
 
   const reassigned = reassignLineItemsToAvailableCards(
     [buildLineItemFromRateCard('li-fr', 'Consultant', france)],
@@ -231,11 +235,11 @@ test('hybrid rate card selection dedupes, falls back, and reassigns removed card
   assert.equal(reassigned[0].dailyCost, 500);
 });
 
-test('pricing model export includes consultant-level rate card and region columns', () => {
+test('pricing model export includes consultant-level rate cards without region columns', () => {
   const workbook = buildBookWorkbook(book({
     region: 'Hybrid',
-    baseRateCardId: 'rc-us',
-    baseRateCardName: 'Hybrid: US Standard + France Standard',
+    baseRateCardId: HYBRID_RATE_CARD_ID,
+    baseRateCardName: 'Hybrid',
     selectedRateCardIds: ['rc-us', 'rc-fr'],
     lineItems: [
       line({ id: 'li-us', rateCardId: 'rc-us', rateCardName: 'US Standard', rateCardRegion: 'US' }),
@@ -247,7 +251,8 @@ test('pricing model export includes consultant-level rate card and region column
 
   assert.ok(pricingSheet);
   assert.equal(pricingSheet.getCell('C23').value, 'Rate Card');
-  assert.equal(pricingSheet.getCell('D23').value, 'Region');
+  assert.equal(pricingSheet.getCell('D23').value, 'Total Days');
   assert.equal(pricingSheet.getCell('C24').value, 'US Standard');
-  assert.equal(pricingSheet.getCell('D25').value, 'France');
+  assert.equal(pricingSheet.getCell('C25').value, 'France Standard');
+  assert.notEqual(pricingSheet.getCell('A5').value, 'Region');
 });
