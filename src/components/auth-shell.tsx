@@ -19,7 +19,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
   if (!ready) return null;
 
   if (isLogin) {
-    return <main className="flex-1 overflow-auto bg-background w-full">{children}</main>;
+    return <main className="flex-1 overflow-auto bg-background w-full min-w-0">{children}</main>;
   }
 
   if (!profile) return null;
@@ -27,7 +27,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
   return (
     <>
       <Nav />
-      <main className="flex-1 overflow-auto bg-background">{children}</main>
+      <main className="flex-1 overflow-auto bg-background min-w-0">{children}</main>
     </>
   );
 }

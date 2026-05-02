@@ -16,6 +16,7 @@ export const ROLES: Role[] = [
 ];
 
 export type Region = 'US' | 'France' | 'England';
+export type BookRegion = Region | 'Hybrid';
 export type Currency = 'USD' | 'EUR';
 export type BookStatus = 'Draft' | 'Final';
 export type RateMode = 'daily' | 'hourly';
@@ -35,6 +36,11 @@ export const REGION_FLAG: Record<Region, string> = {
   US: '🇺🇸',
   France: '🇫🇷',
   England: '🇬🇧',
+};
+
+export const BOOK_REGION_FLAG: Record<BookRegion, string> = {
+  ...REGION_FLAG,
+  Hybrid: '🌐',
 };
 
 export interface RoleRate {
@@ -59,19 +65,35 @@ export interface LineItem {
   days: number[];
   dailyRate: number;
   dailyCost: number;
+  rateCardId?: string;
+  rateCardName?: string;
+  rateCardRegion?: Region;
+}
+
+export interface PhasedPricingRow {
+  id: string;
+  phaseNumber: string;
+  phaseName: string;
+  deliverableName: string;
+  estimatedStartDate: string;
+  estimatedEndDate: string;
+  proposedFee: number;
 }
 
 export interface PricingBookData {
   client: string;
   engagement: string;
-  region: Region;
+  region: BookRegion;
   baseRateCardId: string;
   baseRateCardName: string;
+  selectedRateCardIds?: string[];
   status: BookStatus;
   discount: number;
   markup: number;
   tePercent: number;
   lineItems: LineItem[];
+  showWeeklyAllocation?: boolean;
+  phasedPricing?: PhasedPricingRow[];
   notes: string;
 }
 

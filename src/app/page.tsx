@@ -2,12 +2,13 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText } from 'lucide-react';
-import { getPricingBooks } from '@/lib/store';
+import { Plus, Search, FileText, CreditCard } from 'lucide-react';
+import { getPricingBooks, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { calcTotals, formatMoney } from '@/lib/calculations';
-import { PricingBook, REGION_FLAG } from '@/lib/types';
+import { PricingBook, RateCard, REGION_FLAG } from '@/lib/types';
 import { useCurrencyMode } from '@/lib/currency-mode';
+import { HYBRID_RATE_CARD_ID } from '@/lib/rate-card-selection';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -15,20 +16,21 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Dashboard() {
-  const [books] = useState<PricingBook[]>(() => {
+  const [{ books, rateCards }] = useState<{ books: PricingBook[]; rateCards: RateCard[] }>(() => {
     seedDemoData();
-    return getPricingBooks();
+    return {
+      books: getPricingBooks(),
+      rateCards: getRateCards(),
+    };
   });
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [regionFilter, setRegionFilter] = useState('all');
 
   const filtered = books.filter(b => {
     const q = search.toLowerCase();
     const matchSearch = b.client.toLowerCase().includes(q) || b.engagement.toLowerCase().includes(q);
     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
-    const matchRegion = regionFilter === 'all' || b.region === regionFilter;
-    return matchSearch && matchStatus && matchRegion;
+    return matchSearch && matchStatus;
   });
 
   return (
@@ -63,17 +65,6 @@ export default function Dashboard() {
             <SelectItem value="Final">Final</SelectItem>
           </SelectContent>
         </Select>
-        <Select value={regionFilter} onValueChange={v => setRegionFilter(v ?? 'all')}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Regions</SelectItem>
-            <SelectItem value="US">US</SelectItem>
-            <SelectItem value="France">France</SelectItem>
-            <SelectItem value="England">England</SelectItem>
-          </SelectContent>
-        </Select>
       </div>
 
       {filtered.length === 0 ? (
@@ -84,16 +75,36 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-          {filtered.map(book => <BookCard key={book.id} book={book} />)}
+          {filtered.map(book => <BookCard key={book.id} book={book} rateCards={rateCards} />)}
         </div>
       )}
     </div>
   );
 }
 
-function BookCard({ book }: { book: PricingBook }) {
+function rateCardLabel(book: PricingBook, rateCards: RateCard[]): string {
+  const isHybrid = book.baseRateCardId === HYBRID_RATE_CARD_ID || book.region === 'Hybrid' || (book.selectedRateCardIds?.length ?? 0) > 1;
+
+  if (isHybrid) {
+    const selectedIds = book.selectedRateCardIds?.length
+      ? book.selectedRateCardIds
+      : Array.from(new Set(book.lineItems.map(item => item.rateCardId).filter((id): id is string => Boolean(id))));
+    const selected = selectedIds
+      .map(id => rateCards.find(card => card.id === id))
+      .filter((card): card is RateCard => Boolean(card));
+
+    if (selected.length === 0) return book.baseRateCardName || 'Hybrid';
+    return `Hybrid: ${selected.map(card => `${REGION_FLAG[card.region]} ${card.name}`).join(' + ')}`;
+  }
+
+  const card = rateCards.find(candidate => candidate.id === book.baseRateCardId);
+  return card ? `${REGION_FLAG[card.region]} ${card.name}` : book.baseRateCardName || 'Not set';
+}
+
+function BookCard({ book, rateCards }: { book: PricingBook; rateCards: RateCard[] }) {
   const { mode: currencyMode } = useCurrencyMode();
   const { grandTotal } = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
+  const cardLabel = rateCardLabel(book, rateCards);
   const updated = new Date(book.updatedAt).toLocaleDateString('en-US', {
     month: 'short', day: 'numeric', year: 'numeric',
   });
@@ -117,13 +128,14 @@ function BookCard({ book }: { book: PricingBook }) {
         </CardHeader>
         <CardContent>
           <div className="flex items-center gap-2 text-sm">
-            <Badge variant="outline" className="text-xs font-normal">
-              {REGION_FLAG[book.region]} {book.region}
-            </Badge>
             <span className="text-gray-400 text-xs">{book.lineItems.length} roles</span>
             {book.versions.length > 0 && (
               <span className="text-gray-400 text-xs">v{book.versions.length}</span>
             )}
+          </div>
+          <div className="mt-3 flex min-w-0 items-center gap-1.5 text-xs text-gray-500">
+            <CreditCard className="h-3.5 w-3.5 shrink-0 text-[#5fa07a]" />
+            <span className="min-w-0 truncate">Rate card: {cardLabel}</span>
           </div>
           <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-xl font-bold text-gray-900">

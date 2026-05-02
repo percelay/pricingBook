@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "tsc --rootDir . tests/pricing.test.ts src/lib/calculations.ts src/lib/export.ts src/lib/types.ts src/lib/weekly-allocation.ts --outDir .tmp-tests --module commonjs --target ES2020 --esModuleInterop --skipLibCheck --moduleResolution node --noEmit false && node --test .tmp-tests/tests/pricing.test.js"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.1",

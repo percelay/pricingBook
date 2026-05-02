@@ -42,6 +42,8 @@ export function setWeekDays(days: number[], weekIdx: number, value: number): num
 
 export interface BookTotals {
   subtotal: number;
+  totalDays: number;
+  averageDailyRate: number;
   discountAmount: number;
   afterDiscount: number;
   markupAmount: number;
@@ -60,6 +62,8 @@ export function calcTotals(
   tePercent: number
 ): BookTotals {
   const subtotal = lineItems.reduce((s, i) => s + lineSubtotal(i), 0);
+  const totalLineDays = lineItems.reduce((s, i) => s + totalDays(i), 0);
+  const averageDailyRate = totalLineDays > 0 ? subtotal / totalLineDays : 0;
   const totalCost = lineItems.reduce((s, i) => s + lineCost(i), 0);
   const discountAmount = subtotal * (discount / 100);
   const afterDiscount = subtotal - discountAmount;
@@ -71,6 +75,8 @@ export function calcTotals(
   const grossMarginPct = afterMarkup > 0 ? (grossMargin / afterMarkup) * 100 : 0;
   return {
     subtotal,
+    totalDays: totalLineDays,
+    averageDailyRate,
     discountAmount,
     afterDiscount,
     markupAmount,

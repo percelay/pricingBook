@@ -20,9 +20,10 @@ const ROLE_COLORS: Record<Role, string> = {
 interface Props {
   lineItems: LineItem[];
   onChangeDays: (id: string, days: number[]) => void;
+  onRemoveSection?: () => void;
 }
 
-export default function EditableTimeline({ lineItems, onChangeDays }: Props) {
+export default function EditableTimeline({ lineItems, onChangeDays, onRemoveSection }: Props) {
   const { mode } = useRateMode();
   const [extraWeeks, setExtraWeeks] = useState(0);
 
@@ -77,6 +78,16 @@ export default function EditableTimeline({ lineItems, onChangeDays }: Props) {
                 <Plus className="h-3 w-3" />
               </Button>
             </div>
+            {onRemoveSection && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={onRemoveSection}
+                className="h-7 text-xs text-gray-400 hover:bg-red-50 hover:text-red-600"
+              >
+                Remove section
+              </Button>
+            )}
           </div>
         </div>
       </CardHeader>
