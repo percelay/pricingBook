@@ -29,8 +29,7 @@ export default function Nav() {
   }
 
   return (
-    <aside className="relative flex h-full w-[232px] shrink-0 flex-col overflow-hidden bg-[#001033] text-white">
-      <div className="absolute inset-x-0 top-0 h-72 bg-[radial-gradient(circle_at_40%_0%,rgba(95,189,247,0.36),transparent_16rem)]" />
+    <aside className="nav-hero-panel relative flex h-full w-[232px] shrink-0 flex-col overflow-hidden text-white">
       <div className="relative px-5 py-6">
         <div className="flex items-center gap-2.5">
           <span className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 shadow-[var(--shadow-dark-ghost)]">

@@ -99,6 +99,133 @@
   z-index: 1;
 }
 
+.pricing-hero {
+  isolation: isolate;
+}
+
+.pricing-hero-graphic {
+  position: relative;
+  min-height: 220px;
+  overflow: hidden;
+}
+
+.pricing-ledger-card,
+.pricing-stack-card {
+  position: absolute;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow:
+    rgba(255, 255, 255, 0.66) 0px 1px 1px inset,
+    rgba(0, 39, 80, 0.2) 0px 24px 48px -18px,
+    rgba(0, 39, 80, 0.08) 0px 0px 0px 1px;
+}
+
+.pricing-ledger-card {
+  right: 24px;
+  top: 18px;
+  z-index: 3;
+  width: min(440px, 76%);
+  padding: 20px;
+  transform: rotate(-1.5deg);
+}
+
+.pricing-stack-card {
+  display: grid;
+  gap: 9px;
+  padding: 18px;
+}
+
+.pricing-stack-card span {
+  display: block;
+  height: 8px;
+  border-radius: 9999px;
+  background: rgba(0, 16, 51, 0.84);
+}
+
+.pricing-stack-card-a {
+  left: 18px;
+  top: 34px;
+  z-index: 2;
+  width: 180px;
+  transform: rotate(7deg);
+}
+
+.pricing-stack-card-a span:nth-child(2) {
+  width: 68%;
+  background: rgba(0, 80, 248, 0.72);
+}
+
+.pricing-stack-card-a span:nth-child(3) {
+  width: 84%;
+  background: rgba(107, 113, 132, 0.46);
+}
+
+.pricing-stack-card-b {
+  bottom: 8px;
+  left: 116px;
+  z-index: 1;
+  width: 150px;
+  transform: rotate(-9deg);
+}
+
+.pricing-stack-card-b span:first-child {
+  width: 72%;
+  background: rgba(0, 80, 248, 0.72);
+}
+
+.pricing-stack-card-b span:last-child {
+  width: 92%;
+  background: rgba(0, 16, 51, 0.72);
+}
+
+.pricing-orbit {
+  position: absolute;
+  border: 1px solid rgba(224, 246, 255, 0.34);
+  border-radius: 9999px;
+  transform: rotate(-14deg);
+}
+
+.pricing-orbit-a {
+  inset: 6px 58px 24px 38px;
+}
+
+.pricing-orbit-b {
+  inset: 44px 18px -18px 170px;
+}
+
+.pricing-curve {
+  position: absolute;
+  inset: 24px 6px auto auto;
+  z-index: 0;
+  width: min(520px, 94%);
+  height: auto;
+}
+
+.nav-hero-panel {
+  background: var(--gradient-hero-gradient);
+  box-shadow: rgba(0, 39, 80, 0.16) 1px 0 0;
+}
+
+.nav-hero-panel::before {
+  content: "";
+  position: absolute;
+  inset: -8% -28% auto -20%;
+  height: 420px;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.58) 1px, transparent 1.5px);
+  background-size: 18px 18px;
+  mask-image: radial-gradient(circle at 58% 34%, black 0 13rem, transparent 22rem);
+  opacity: 0.46;
+}
+
+.nav-hero-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -34% -22% -10%;
+  height: 380px;
+  background: var(--gradient-blue-glow-radial);
+  opacity: 0.76;
+}
+
 .surface-card {
   border-radius: 20px;
   background: var(--color-pure-surface);

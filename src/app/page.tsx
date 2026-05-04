@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, FileText, CreditCard, Sparkles, TrendingUp, Users, ArrowUpRight } from 'lucide-react';
+import { Plus, Search, FileText, CreditCard, ArrowUpRight } from 'lucide-react';
 import { getPricingBooks, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
 import { calcTotals, formatMoney } from '@/lib/calculations';
@@ -32,34 +32,15 @@ export default function Dashboard() {
     const matchStatus = statusFilter === 'all' || b.status === statusFilter;
     return matchSearch && matchStatus;
   });
-  const totalPipeline = books.reduce((sum, book) => {
-    const { grandTotal } = calcTotals(book.lineItems, book.discount, book.markup, book.tePercent);
-    return sum + grandTotal;
-  }, 0);
-  const finalCount = books.filter(book => book.status === 'Final').length;
-  const totalRoles = books.reduce((sum, book) => sum + book.lineItems.length, 0);
 
   return (
     <div className="product-page-wide">
-      <div className="product-hero mb-6 px-7 py-7 sm:px-9 sm:py-8">
-        <div className="flex flex-col gap-7 lg:flex-row lg:items-end lg:justify-between">
-          <div className="max-w-2xl">
-            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5 text-sm font-medium text-[#1b2540] shadow-[var(--shadow-pill)]">
-              <Sparkles className="h-3.5 w-3.5 text-[#0050f8]" />
-              Million-dollar pricing command center
-            </div>
-            <h1 className="display-type text-[40px] leading-[1.05] tracking-[-0.01em] sm:text-5xl">
-              Price work with the calm precision of a deal desk.
-            </h1>
-            <p className="mt-4 max-w-xl text-base leading-7 text-[#e0f6ff]">
-              Build, tune, and export consulting fee books from one sharp operating surface.
-            </p>
-          </div>
-          <div className="grid min-w-[280px] grid-cols-3 gap-2 rounded-[20px] bg-white/10 p-2 shadow-[var(--shadow-dark-ghost)] backdrop-blur">
-            <HeroMetric icon={TrendingUp} label="Pipeline" value={formatMoney(totalPipeline, 'USD')} />
-            <HeroMetric icon={FileText} label="Final" value={String(finalCount)} />
-            <HeroMetric icon={Users} label="Roles" value={String(totalRoles)} />
-          </div>
+      <div className="product-hero pricing-hero mb-6 px-7 py-7 sm:px-9 sm:py-8">
+        <div className="grid min-h-[230px] items-center gap-7 lg:grid-cols-[minmax(260px,0.82fr)_minmax(520px,1.18fr)]">
+          <h1 className="display-type text-[40px] leading-[1.05] tracking-[-0.01em] sm:text-5xl">
+            Working Books
+          </h1>
+          <PricingHeroGraphic />
         </div>
       </div>
 
@@ -108,12 +89,60 @@ export default function Dashboard() {
   );
 }
 
-function HeroMetric({ icon: Icon, label, value }: { icon: typeof TrendingUp; label: string; value: string }) {
+function PricingHeroGraphic() {
+  const bookLines = [
+    { label: 'Discovery', amount: '$193k', width: 'w-[58%]' },
+    { label: 'Build', amount: '$421k', width: 'w-[78%]' },
+    { label: 'Adoption', amount: '$177k', width: 'w-[44%]' },
+  ];
+
   return (
-    <div className="rounded-2xl bg-white p-3 text-[#1b2540]">
-      <Icon className="mb-5 h-4 w-4 text-[#0050f8]" />
-      <div className="truncate text-lg font-medium tabular-nums tracking-[-0.02em]">{value}</div>
-      <div className="mt-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#6b7184]">{label}</div>
+    <div className="pricing-hero-graphic" aria-hidden="true">
+      <div className="pricing-orbit pricing-orbit-a" />
+      <div className="pricing-orbit pricing-orbit-b" />
+      <div className="pricing-ledger-card">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <div className="h-2 w-24 rounded-full bg-[#1b2540]" />
+            <div className="h-2 w-16 rounded-full bg-[#6b7184]/45" />
+          </div>
+          <div className="rounded-full bg-[#001033] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-white">
+            Draft
+          </div>
+        </div>
+        <div className="space-y-3">
+          {bookLines.map(line => (
+            <div key={line.label} className="grid grid-cols-[82px_minmax(0,1fr)_58px] items-center gap-3">
+              <span className="text-xs font-medium text-[#6b7184]">{line.label}</span>
+              <span className="h-2 rounded-full bg-[#e0f6ff]">
+                <span className={`block h-2 rounded-full bg-[#0050f8] ${line.width}`} />
+              </span>
+              <span className="text-right text-xs font-medium tabular-nums text-[#1b2540]">{line.amount}</span>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-2">
+          {['ADR', 'GM', 'T&E'].map((label, index) => (
+            <div key={label} className="rounded-2xl bg-[#f8f9fc] px-3 py-2">
+              <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#6b7184]">{label}</div>
+              <div className="mt-2 h-2 rounded-full bg-[#001033]" style={{ opacity: 0.92 - index * 0.18 }} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="pricing-stack-card pricing-stack-card-a">
+        <span />
+        <span />
+        <span />
+      </div>
+      <div className="pricing-stack-card pricing-stack-card-b">
+        <span />
+        <span />
+      </div>
+      <svg className="pricing-curve" viewBox="0 0 520 180" fill="none">
+        <path d="M8 132C94 38 156 174 246 78C325 -7 386 116 512 28" stroke="rgba(255,255,255,0.72)" strokeWidth="2" strokeLinecap="round" />
+        <path d="M8 132C94 38 156 174 246 78C325 -7 386 116 512 28" stroke="#e0f6ff" strokeWidth="1" strokeLinecap="round" strokeDasharray="3 9" />
+      </svg>
     </div>
   );
 }
