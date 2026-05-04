@@ -254,6 +254,248 @@
   background: rgba(0, 16, 51, 0.18);
 }
 
+.retro-pricing-graphic {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.retro-pricing-graphic-login {
+  min-height: 300px;
+}
+
+.retro-pricing-graphic-compact {
+  min-height: 92px;
+}
+
+.retro-grid-plane {
+  position: absolute;
+  inset: 8% 3% 7% 0;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  gap: 8px;
+  transform: skewY(-8deg);
+}
+
+.retro-grid-plane span {
+  min-height: 28px;
+  border: 1px solid rgba(224, 246, 255, 0.2);
+  background: rgba(224, 246, 255, 0.035);
+  box-shadow: rgba(224, 246, 255, 0.08) 0px 0px 0px 1px inset;
+}
+
+.retro-grid-plane span:nth-child(4n),
+.retro-grid-plane span:nth-child(11n) {
+  background: rgba(0, 80, 248, 0.14);
+}
+
+.retro-book {
+  position: absolute;
+  display: grid;
+  gap: 12px;
+  border-radius: 4px;
+  border: 1px solid rgba(224, 246, 255, 0.28);
+  background:
+    linear-gradient(90deg, rgba(224, 246, 255, 0.16), rgba(255, 255, 255, 0.05)),
+    rgba(0, 16, 51, 0.56);
+  box-shadow:
+    rgba(224, 246, 255, 0.18) 0px 0px 0px 1px inset,
+    rgba(0, 16, 51, 0.34) 0px 28px 60px -22px;
+}
+
+.retro-book span {
+  display: block;
+  height: 9px;
+  border-radius: 9999px;
+  background: rgba(224, 246, 255, 0.82);
+}
+
+.retro-book span:nth-child(2) {
+  background: #0050f8;
+}
+
+.retro-book span:nth-child(3) {
+  width: 62%;
+  background: rgba(224, 246, 255, 0.36);
+}
+
+.retro-book-a {
+  inset: 13% 12% auto 22%;
+  z-index: 3;
+  min-height: 188px;
+  padding: 28px;
+  transform: rotate(-8deg) skewX(-6deg);
+}
+
+.retro-book-b {
+  inset: auto 26% 13% 6%;
+  z-index: 2;
+  min-height: 154px;
+  padding: 24px;
+  opacity: 0.78;
+  transform: rotate(7deg) skewX(8deg);
+}
+
+.retro-scanline {
+  position: absolute;
+  z-index: 4;
+  height: 34px;
+  clip-path: polygon(0 48%, 100% 0, 98% 54%, 0 100%);
+  background:
+    linear-gradient(90deg, #001033 0%, #0050f8 34%, #e0f6ff 52%, #0050f8 72%, #001033 100%);
+  box-shadow:
+    rgba(95, 189, 247, 0.62) 0px 18px 54px,
+    rgba(255, 255, 255, 0.64) 0px 1px 1px inset;
+}
+
+.retro-scanline-a {
+  inset: 42% 4% auto 4%;
+  transform: rotate(-8deg);
+}
+
+.retro-scanline-b {
+  inset: 55% 18% auto 18%;
+  height: 20px;
+  opacity: 0.55;
+  transform: rotate(-8deg);
+}
+
+.retro-price-node {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid rgba(224, 246, 255, 0.24);
+  background: rgba(0, 16, 51, 0.72);
+  box-shadow:
+    rgba(224, 246, 255, 0.18) 0px 0px 0px 1px inset,
+    rgba(95, 189, 247, 0.4) 0px 0px 48px;
+  color: white;
+}
+
+.retro-price-node span {
+  align-self: end;
+  color: rgba(224, 246, 255, 0.68);
+  font-size: 10px;
+  font-weight: 480;
+  letter-spacing: 0.1em;
+}
+
+.retro-price-node strong {
+  align-self: start;
+  font-size: 34px;
+  font-weight: 480;
+  letter-spacing: -0.04em;
+}
+
+.retro-price-node-a {
+  right: 8%;
+  bottom: 16%;
+  width: 132px;
+  height: 132px;
+}
+
+.retro-price-node-b {
+  left: 8%;
+  top: 18%;
+  width: 94px;
+  height: 94px;
+  opacity: 0.9;
+}
+
+.retro-price-node-b strong {
+  font-size: 24px;
+}
+
+.retro-vector {
+  position: absolute;
+  inset: 8% 2% auto auto;
+  z-index: 1;
+  width: 96%;
+  height: auto;
+}
+
+.retro-vector path {
+  stroke: rgba(224, 246, 255, 0.52);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 4 12;
+}
+
+.retro-vector path:nth-child(2) {
+  stroke: rgba(208, 241, 0, 0.72);
+  stroke-dasharray: 1 16;
+}
+
+.retro-pricing-graphic-compact .retro-grid-plane {
+  inset: 0 4% 0 10%;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.retro-pricing-graphic-compact .retro-grid-plane span {
+  min-height: 9px;
+}
+
+.retro-pricing-graphic-compact .retro-book-a {
+  inset: 15px 13% auto 43%;
+  min-height: 56px;
+  padding: 11px 18px;
+  gap: 6px;
+}
+
+.retro-pricing-graphic-compact .retro-book-b {
+  inset: auto 38% 6px 22%;
+  min-height: 42px;
+  padding: 9px 14px;
+  gap: 5px;
+}
+
+.retro-pricing-graphic-compact .retro-book span {
+  height: 5px;
+}
+
+.retro-pricing-graphic-compact .retro-scanline-a {
+  inset: 44px 7% auto 18%;
+  height: 13px;
+}
+
+.retro-pricing-graphic-compact .retro-scanline-b {
+  inset: 62px 20% auto 32%;
+  height: 8px;
+}
+
+.retro-pricing-graphic-compact .retro-price-node-a {
+  right: 3%;
+  bottom: 8px;
+  width: 68px;
+  height: 68px;
+}
+
+.retro-pricing-graphic-compact .retro-price-node-b {
+  left: 14%;
+  top: 12px;
+  width: 42px;
+  height: 42px;
+}
+
+.retro-pricing-graphic-compact .retro-price-node span {
+  font-size: 7px;
+}
+
+.retro-pricing-graphic-compact .retro-price-node strong {
+  font-size: 18px;
+}
+
+.retro-pricing-graphic-compact .retro-price-node-b strong {
+  font-size: 12px;
+}
+
+.retro-pricing-graphic-compact .retro-vector {
+  inset: -4px 0 auto auto;
+}
+
 .nav-hero-panel {
   background: var(--gradient-hero-gradient);
   box-shadow: rgba(0, 39, 80, 0.16) 1px 0 0;
@@ -268,6 +510,7 @@
   background-size: 18px 18px;
   mask-image: radial-gradient(circle at 58% 34%, black 0 13rem, transparent 22rem);
   opacity: 0.46;
+  pointer-events: none;
 }
 
 .nav-hero-panel::after {
@@ -277,6 +520,12 @@
   height: 380px;
   background: var(--gradient-blue-glow-radial);
   opacity: 0.76;
+  pointer-events: none;
+}
+
+.nav-hero-panel > * {
+  position: relative;
+  z-index: 1;
 }
 
 .surface-card {

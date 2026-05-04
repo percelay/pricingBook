@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import PricingHeroGraphic from '@/components/pricing-hero-graphic';
+import RetroPricingGraphic from '@/components/retro-pricing-graphic';
 
 export default function Dashboard() {
   const [{ books, rateCards }] = useState<{ books: PricingBook[]; rateCards: RateCard[] }>(() => {
@@ -41,7 +41,7 @@ export default function Dashboard() {
           <h1 className="display-type text-[34px] leading-[1.02] tracking-[-0.01em] sm:text-[40px]">
             Working Books
           </h1>
-          <PricingHeroGraphic />
+          <RetroPricingGraphic mode="compact" />
         </div>
       </div>
 

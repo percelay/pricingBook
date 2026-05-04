@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowRight } from 'lucide-react';
 import { PROFILES, useProfile } from '@/lib/profile';
+import RetroPricingGraphic from '@/components/retro-pricing-graphic';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -57,38 +58,8 @@ export default function LoginPage() {
           </div>
         </main>
 
-        <KineticPricingGraphic />
+        <RetroPricingGraphic />
       </div>
     </div>
-  );
-}
-
-function KineticPricingGraphic() {
-  return (
-    <aside className="login-kinetic-graphic relative min-h-[300px] sm:min-h-[380px] lg:min-h-[560px]" aria-hidden="true">
-      <div className="login-sheet login-sheet-back" />
-      <div className="login-sheet login-sheet-front">
-        <div className="login-sheet-title">
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="login-ledger-grid">
-          {Array.from({ length: 30 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-        <div className="login-total-panel">
-          <span>GROSS MARGIN</span>
-          <strong>62.7%</strong>
-        </div>
-      </div>
-      <div className="login-ribbon login-ribbon-a" />
-      <div className="login-ribbon login-ribbon-b" />
-      <div className="login-ribbon login-ribbon-c" />
-      <div className="login-glint" />
-      <div className="login-axis login-axis-x" />
-      <div className="login-axis login-axis-y" />
-    </aside>
   );
 }

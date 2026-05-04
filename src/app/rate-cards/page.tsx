@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import PricingHeroGraphic from '@/components/pricing-hero-graphic';
+import RetroPricingGraphic from '@/components/retro-pricing-graphic';
 
 type FormState = {
   name: string;
@@ -115,7 +115,7 @@ export default function RateCardsPage() {
           <h1 className="display-type text-[34px] leading-[1.02] tracking-[-0.01em] sm:text-[40px]">
             Rate Cards
           </h1>
-          <PricingHeroGraphic variant="rates" />
+          <RetroPricingGraphic mode="compact" variant="rates" />
         </div>
       </div>
 

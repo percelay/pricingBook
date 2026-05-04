@@ -111,6 +111,7 @@ export default function Nav() {
               <p className="truncate text-[10px] uppercase tracking-wider text-[#e0f6ff]/60">{profile.role}</p>
             </div>
             <button
+              type="button"
               onClick={handleSignOut}
               title="Sign out"
               className="flex h-7 w-7 items-center justify-center rounded-full text-[#e0f6ff]/60 hover:bg-white/10 hover:text-white"
