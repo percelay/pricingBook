@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PricingHeroGraphic from '@/components/pricing-hero-graphic';
 
 type FormState = {
   name: string;
@@ -109,13 +110,19 @@ export default function RateCardsPage() {
 
   return (
     <div className="product-page">
-      <div className="mb-8 flex flex-col gap-4 rounded-[20px] bg-white p-5 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-normal text-[#1b2540]">Rate Cards</h1>
-          <p className="mt-1 text-sm text-[#6b7184]">
-            Bill rates and internal costs by role · viewing in <span className="font-medium text-[#1b2540]">{mode === 'hourly' ? 'hourly' : 'daily'}</span> · <span className="font-medium text-[#1b2540]">{currencyMode === 'EUR' ? 'euros' : 'dollars'}</span>
-          </p>
+      <div className="product-hero pricing-hero compact-hero mb-6 px-6 py-4 sm:px-8">
+        <div className="grid min-h-[92px] items-center gap-4 md:grid-cols-[minmax(220px,0.72fr)_minmax(360px,1.28fr)]">
+          <h1 className="display-type text-[34px] leading-[1.02] tracking-[-0.01em] sm:text-[40px]">
+            Rate Cards
+          </h1>
+          <PricingHeroGraphic variant="rates" />
         </div>
+      </div>
+
+      <div className="mb-8 flex flex-col gap-4 rounded-[20px] bg-white p-4 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
+        <p className="text-sm text-[#6b7184]">
+          Viewing in <span className="font-medium text-[#1b2540]">{mode === 'hourly' ? 'hourly' : 'daily'}</span> · <span className="font-medium text-[#1b2540]">{currencyMode === 'EUR' ? 'euros' : 'dollars'}</span>
+        </p>
         <Button onClick={openCreate}>
           <Plus className="h-4 w-4 mr-2" />
           New Rate Card

@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PricingHeroGraphic from '@/components/pricing-hero-graphic';
 
 export default function Dashboard() {
   const [{ books, rateCards }] = useState<{ books: PricingBook[]; rateCards: RateCard[] }>(() => {
@@ -35,9 +36,9 @@ export default function Dashboard() {
 
   return (
     <div className="product-page-wide">
-      <div className="product-hero pricing-hero mb-6 px-7 py-7 sm:px-9 sm:py-8">
-        <div className="grid min-h-[230px] items-center gap-7 lg:grid-cols-[minmax(260px,0.82fr)_minmax(520px,1.18fr)]">
-          <h1 className="display-type text-[40px] leading-[1.05] tracking-[-0.01em] sm:text-5xl">
+      <div className="product-hero pricing-hero compact-hero mb-6 px-6 py-4 sm:px-8">
+        <div className="grid min-h-[92px] items-center gap-4 md:grid-cols-[minmax(220px,0.72fr)_minmax(360px,1.28fr)]">
+          <h1 className="display-type text-[34px] leading-[1.02] tracking-[-0.01em] sm:text-[40px]">
             Working Books
           </h1>
           <PricingHeroGraphic />
@@ -85,64 +86,6 @@ export default function Dashboard() {
           {filtered.map(book => <BookCard key={book.id} book={book} rateCards={rateCards} />)}
         </div>
       )}
-    </div>
-  );
-}
-
-function PricingHeroGraphic() {
-  const bookLines = [
-    { label: 'Discovery', amount: '$193k', width: 'w-[58%]' },
-    { label: 'Build', amount: '$421k', width: 'w-[78%]' },
-    { label: 'Adoption', amount: '$177k', width: 'w-[44%]' },
-  ];
-
-  return (
-    <div className="pricing-hero-graphic" aria-hidden="true">
-      <div className="pricing-orbit pricing-orbit-a" />
-      <div className="pricing-orbit pricing-orbit-b" />
-      <div className="pricing-ledger-card">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <div className="h-2 w-24 rounded-full bg-[#1b2540]" />
-            <div className="h-2 w-16 rounded-full bg-[#6b7184]/45" />
-          </div>
-          <div className="rounded-full bg-[#001033] px-3 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-white">
-            Draft
-          </div>
-        </div>
-        <div className="space-y-3">
-          {bookLines.map(line => (
-            <div key={line.label} className="grid grid-cols-[82px_minmax(0,1fr)_58px] items-center gap-3">
-              <span className="text-xs font-medium text-[#6b7184]">{line.label}</span>
-              <span className="h-2 rounded-full bg-[#e0f6ff]">
-                <span className={`block h-2 rounded-full bg-[#0050f8] ${line.width}`} />
-              </span>
-              <span className="text-right text-xs font-medium tabular-nums text-[#1b2540]">{line.amount}</span>
-            </div>
-          ))}
-        </div>
-        <div className="mt-5 grid grid-cols-3 gap-2">
-          {['ADR', 'GM', 'T&E'].map((label, index) => (
-            <div key={label} className="rounded-2xl bg-[#f8f9fc] px-3 py-2">
-              <div className="text-[10px] font-medium uppercase tracking-[0.08em] text-[#6b7184]">{label}</div>
-              <div className="mt-2 h-2 rounded-full bg-[#001033]" style={{ opacity: 0.92 - index * 0.18 }} />
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="pricing-stack-card pricing-stack-card-a">
-        <span />
-        <span />
-        <span />
-      </div>
-      <div className="pricing-stack-card pricing-stack-card-b">
-        <span />
-        <span />
-      </div>
-      <svg className="pricing-curve" viewBox="0 0 520 180" fill="none">
-        <path d="M8 132C94 38 156 174 246 78C325 -7 386 116 512 28" stroke="rgba(255,255,255,0.72)" strokeWidth="2" strokeLinecap="round" />
-        <path d="M8 132C94 38 156 174 246 78C325 -7 386 116 512 28" stroke="#e0f6ff" strokeWidth="1" strokeLinecap="round" strokeDasharray="3 9" />
-      </svg>
     </div>
   );
 }
