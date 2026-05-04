@@ -160,23 +160,23 @@ export default function NewBookPage() {
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
-      <div className="flex items-center gap-3 mb-8">
+    <div className="product-page-wide">
+      <div className="mb-6 flex items-center gap-3 rounded-[20px] bg-white p-4 shadow-[var(--shadow-card)]">
         <Link href="/">
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">New Pricing Book</h1>
-          <p className="text-gray-500 mt-0.5">Create a pricing for a new client engagement</p>
+          <h1 className="text-3xl font-normal text-[#1b2540]">New Pricing Book</h1>
+          <p className="mt-1 text-sm text-[#6b7184]">Create a pricing book for a new client engagement</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="editor-layout grid grid-cols-1 gap-6">
         <div className="space-y-5">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Engagement Details</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Engagement Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div className="space-y-1.5">
@@ -199,7 +199,7 @@ export default function NewBookPage() {
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-sm font-semibold text-gray-700">Team & Fees</CardTitle>
+                <CardTitle>Team & Fees</CardTitle>
                 <Select onValueChange={v => v && addRole(v)} value={null}>
                   <SelectTrigger className="h-8 w-full text-sm sm:w-44">
                     <SelectValue placeholder="+ Add role" />
@@ -385,7 +385,7 @@ export default function NewBookPage() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Notes</CardTitle></CardHeader>
             <CardContent>
               <Textarea
                 placeholder="Assumptions, exclusions, or context..."
@@ -399,7 +399,7 @@ export default function NewBookPage() {
 
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Pricing Summary</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
@@ -438,7 +438,7 @@ export default function NewBookPage() {
                     <span className="tabular-nums">+{formatMoney(totals.teAmount, currencyMode)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-gray-900 text-base pt-1.5 border-t">
+                <div className="flex justify-between border-t pt-1.5 text-base font-medium text-[#1b2540]">
                   <span>Total</span>
                   <span className="tabular-nums">{formatMoney(totals.grandTotal, currencyMode)}</span>
                 </div>
@@ -447,7 +447,7 @@ export default function NewBookPage() {
           </Card>
 
           {lineItems.length > 0 && (
-            <Card className="bg-zinc-50 border-zinc-200">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
                   <TrendingUp className="h-4 w-4 text-[#5fa07a]" />

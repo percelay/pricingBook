@@ -108,12 +108,12 @@ export default function RateCardsPage() {
   const unit = rateUnit(mode);
 
   return (
-    <div className="p-8 max-w-5xl mx-auto">
-      <div className="flex items-center justify-between mb-8">
+    <div className="product-page">
+      <div className="mb-8 flex flex-col gap-4 rounded-[20px] bg-white p-5 shadow-[var(--shadow-card)] sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rate Cards</h1>
-          <p className="text-gray-500 mt-1">
-            Bill rates and internal costs by region and role · viewing in <span className="font-medium text-gray-700">{mode === 'hourly' ? 'hourly' : 'daily'}</span> · <span className="font-medium text-gray-700">{currencyMode === 'EUR' ? 'euros' : 'dollars'}</span>
+          <h1 className="text-3xl font-normal text-[#1b2540]">Rate Cards</h1>
+          <p className="mt-1 text-sm text-[#6b7184]">
+            Bill rates and internal costs by role · viewing in <span className="font-medium text-[#1b2540]">{mode === 'hourly' ? 'hourly' : 'daily'}</span> · <span className="font-medium text-[#1b2540]">{currencyMode === 'EUR' ? 'euros' : 'dollars'}</span>
           </p>
         </div>
         <Button onClick={openCreate}>
@@ -123,9 +123,9 @@ export default function RateCardsPage() {
       </div>
 
       {cards.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="surface-card py-20 text-center text-[#6b7184]">
           <CreditCard className="h-12 w-12 mx-auto mb-3 opacity-30" />
-          <p className="font-medium text-gray-500">No rate cards yet</p>
+          <p className="font-medium text-[#1b2540]">No rate cards yet</p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -137,7 +137,7 @@ export default function RateCardsPage() {
             .filter(g => g.list.length > 0)
             .map(group => (
               <div key={group.label}>
-                <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">
+                <h2 className="fine-label mb-3">
                   {group.label}
                 </h2>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -271,23 +271,23 @@ function RateCardCard({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-[1fr_auto_auto_auto] gap-x-4 gap-y-1.5 text-sm items-baseline">
-          <span className="text-xs text-gray-400 uppercase tracking-wider">Role</span>
-          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Rate</span>
-          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Cost</span>
-          <span className="text-xs text-gray-400 uppercase tracking-wider text-right">Margin</span>
+          <span className="fine-label">Role</span>
+          <span className="fine-label text-right">Rate</span>
+          <span className="fine-label text-right">Cost</span>
+          <span className="fine-label text-right">Margin</span>
           {card.roles.map(r => {
             const margin = r.dailyRate > 0 ? ((r.dailyRate - r.dailyCost) / r.dailyRate) * 100 : 0;
             return (
               <div key={r.role} className="contents">
-                <span className="text-gray-700">{r.role}</span>
-                <span className="font-semibold text-gray-900 tabular-nums text-right">
+                <span className="text-[#1b2540]">{r.role}</span>
+                <span className="font-medium text-[#1b2540] tabular-nums text-right">
                   {formatMoney(toDisplayRate(r.dailyRate, mode), currencyMode)}
                   <span className="text-gray-400 font-normal text-xs">/{unit}</span>
                 </span>
-                <span className="text-gray-500 tabular-nums text-right">
+                <span className="text-[#6b7184] tabular-nums text-right">
                   {formatMoney(toDisplayRate(r.dailyCost, mode), currencyMode)}
                 </span>
-                <span className="tabular-nums text-right text-xs font-medium text-[#5fa07a]">
+                <span className="tabular-nums text-right text-xs font-medium text-[#0050f8]">
                   {margin.toFixed(0)}%
                 </span>
               </div>

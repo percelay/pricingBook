@@ -251,9 +251,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
+    <div className="product-page-wide">
       {/* Header */}
-      <div className="flex items-start justify-between mb-8">
+      <div className="mb-6 flex flex-col gap-4 rounded-[20px] bg-white p-4 shadow-[var(--shadow-card)] xl:flex-row xl:items-start xl:justify-between">
         <div className="flex items-start gap-3">
           <Link href="/">
             <Button variant="ghost" size="icon" className="mt-0.5 shrink-0">
@@ -262,15 +262,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           </Link>
           <div>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold text-gray-900">{book.client}</h1>
+              <h1 className="text-3xl font-normal text-[#1b2540]">{book.client}</h1>
               <Badge variant={book.status === 'Final' ? 'default' : 'secondary'}>{book.status}</Badge>
             </div>
-            <p className="text-gray-500 mt-1">{book.engagement}</p>
-            <p className="text-xs text-gray-400 mt-0.5">Rate cards: {book.baseRateCardName}</p>
+            <p className="mt-1 text-sm text-[#6b7184]">{book.engagement}</p>
+            <p className="mt-0.5 text-xs text-[#6b7184]">Rate cards: {book.baseRateCardName}</p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex flex-wrap items-center gap-2 shrink-0">
           {dirty && <span className="text-xs text-gray-400 font-medium">Unsaved</span>}
           <ExportDialog
             initial={{
@@ -333,10 +333,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <div className="editor-layout grid grid-cols-1 gap-6">
         <div className="space-y-5">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Rate Card Setup</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Rate Card Setup</CardTitle></CardHeader>
             <CardContent>
               <RateCardSelector
                 value={rateCardSelection}
@@ -350,7 +350,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           <Card>
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-sm font-semibold text-gray-700">Team & Fees</CardTitle>
+                <CardTitle>Team & Fees</CardTitle>
                 <Select onValueChange={v => v && addRole(v)} value={null}>
                   <SelectTrigger className="h-8 w-full text-sm sm:w-44">
                     <SelectValue placeholder="+ Add role" />
@@ -551,7 +551,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* Notes */}
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Notes</CardTitle></CardHeader>
             <CardContent>
               <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={4} placeholder="Assumptions, exclusions, context..." />
             </CardContent>
@@ -570,7 +570,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
         {/* Sidebar */}
         <div className="space-y-4">
           <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Pricing Summary</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
@@ -609,7 +609,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                     <span className="tabular-nums">+{formatMoney(totals.teAmount, currencyMode)}</span>
                   </div>
                 )}
-                <div className="flex justify-between font-bold text-gray-900 text-lg pt-1.5 border-t">
+                <div className="flex justify-between border-t pt-1.5 text-lg font-medium text-[#1b2540]">
                   <span>Total</span>
                   <span className="tabular-nums">{formatMoney(totals.grandTotal, currencyMode)}</span>
                 </div>

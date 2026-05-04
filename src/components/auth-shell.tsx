@@ -27,7 +27,7 @@ export default function AuthShell({ children }: { children: ReactNode }) {
   return (
     <>
       <Nav />
-      <main className="flex-1 overflow-auto bg-background min-w-0">{children}</main>
+      <main className="app-shell-surface flex-1 overflow-auto min-w-0">{children}</main>
     </>
   );
 }
