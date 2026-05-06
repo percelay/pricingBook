@@ -48,29 +48,36 @@ export default function ExportDialog({ initial, onConfirm }: ExportDialogProps) 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger render={<Button variant="outline" size="sm" />}>
-        <Download className="h-4 w-4 mr-1.5" />Export
+        <Download className="h-3.5 w-3.5" /> Export
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Select tabs to export</DialogTitle>
+          <DialogTitle>Export · Select Tabs</DialogTitle>
         </DialogHeader>
-        <div className="flex flex-col gap-2">
-          {OPTIONS.map(opt => {
+        <div className="flex flex-col">
+          {OPTIONS.map((opt, idx) => {
             const checked = options[opt.key];
+            const isLast = idx === OPTIONS.length - 1;
             return (
               <label
                 key={opt.key}
-                className="flex items-start gap-3 rounded-lg border border-gray-200 p-3 cursor-pointer hover:bg-gray-50 transition-colors"
+                className={`flex items-start gap-4 border-l border-r border-t border-[#292929] p-4 cursor-pointer transition-colors hover:bg-[#292929] hover:text-[#ffffff] ${
+                  isLast ? 'border-b' : ''
+                }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggle(opt.key)}
-                  className="mt-0.5 h-4 w-4 rounded border-gray-300 accent-[#5fa07a]"
+                  className="mt-1 h-4 w-4 cursor-pointer accent-[#292929]"
                 />
                 <div className="flex-1">
-                  <div className="text-sm font-medium text-gray-900">{opt.label}</div>
-                  <div className="text-xs text-gray-500 mt-0.5">{opt.description}</div>
+                  <div className="font-mono text-[12px] font-medium uppercase tracking-[0.2em]">
+                    {opt.label}
+                  </div>
+                  <div className="mt-1 text-[12px] tracking-[-0.02em] opacity-70">
+                    {opt.description}
+                  </div>
                 </div>
               </label>
             );
@@ -79,7 +86,7 @@ export default function ExportDialog({ initial, onConfirm }: ExportDialogProps) 
         <DialogFooter>
           <DialogClose render={<Button variant="outline" />}>Cancel</DialogClose>
           <Button onClick={handleExport} disabled={noneSelected}>
-            <Download className="h-4 w-4 mr-1.5" />
+            <Download className="h-3.5 w-3.5" />
             Export
           </Button>
         </DialogFooter>

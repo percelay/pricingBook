@@ -2,9 +2,8 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { BookOpen, LayoutDashboard, CreditCard, Plus, Clock, Coins, LogOut } from 'lucide-react';
+import { LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRateMode } from '@/lib/rate-mode';
 import { useCurrencyMode } from '@/lib/currency-mode';
@@ -12,8 +11,9 @@ import { useProfile } from '@/lib/profile';
 import { RateMode, CurrencyMode } from '@/lib/types';
 
 const navItems = [
-  { href: '/', label: 'Pricing', icon: LayoutDashboard },
-  { href: '/rate-cards', label: 'Rate Cards', icon: CreditCard },
+  { href: '/', label: 'Pricing' },
+  { href: '/rate-cards', label: 'Rate Cards' },
+  { href: '/books/new', label: 'New Book' },
 ];
 
 export default function Nav() {
@@ -29,41 +29,57 @@ export default function Nav() {
   }
 
   return (
-    <aside className="w-56 shrink-0 bg-white text-gray-800 flex flex-col h-full border-r border-[#77BB91]">
-      <div className="px-5 py-6 border-b border-gray-100">
-        <div className="flex items-center gap-2.5">
-          <BookOpen className="h-5 w-5 text-[#77BB91]" />
-          <span className="font-semibold text-base tracking-tight lowercase">probook</span>
-        </div>
+    <aside className="w-60 shrink-0 bg-[#ffffff] text-[#292929] flex flex-col h-full border-r border-[#292929]">
+      {/* Wordmark — uppercase tracked, bordered */}
+      <div className="border-b border-[#292929] px-5 py-5">
+        <Link href="/" className="block">
+          <div className="font-mono text-[10px] font-medium uppercase tracking-[0.3em] text-[#292929]/60">
+            PROBOOK / 001
+          </div>
+          <div className="mt-1 font-sans text-[28px] font-thin leading-none tracking-[-0.05em] text-[#292929]">
+            ProBook
+          </div>
+          <div className="mt-1.5 font-mono text-[10px] uppercase tracking-[0.2em] text-[#292929]/60">
+            Pricing — light
+          </div>
+        </Link>
       </div>
 
-      <nav className="flex-1 p-3 space-y-0.5">
-        {navItems.map(({ href, label, icon: Icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              'flex items-center gap-3 px-3 py-2.5 text-sm font-medium transition-colors rounded',
-              pathname === href
-                ? 'bg-[#77BB91] text-white'
-                : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
-            )}
-          >
-            <Icon className="h-4 w-4" />
-            {label}
-          </Link>
-        ))}
+      {/* Navigation links */}
+      <nav className="border-b border-[#292929] py-2">
+        {navItems.map(({ href, label }) => {
+          const active = pathname === href;
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={cn(
+                'group/link flex items-center justify-between px-5 py-3 font-mono text-[12px] uppercase tracking-[0.2em] transition-colors border-l-2',
+                active
+                  ? 'border-l-[#292929] bg-[#292929] text-[#ffffff]'
+                  : 'border-l-transparent text-[#292929] hover:bg-[#292929] hover:text-[#ffffff]'
+              )}
+            >
+              <span>{label}</span>
+              <span className="font-mono text-[10px] tracking-[0.15em] opacity-50 group-hover/link:opacity-100">
+                {String(navItems.findIndex(n => n.href === href) + 1).padStart(2, '0')}
+              </span>
+            </Link>
+          );
+        })}
       </nav>
 
-      <div className="p-3 border-t border-gray-100 space-y-3">
-        <div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5 px-1 uppercase tracking-wider">
-            <Clock className="h-3 w-3" />
-            Rate Display
+      {/* Settings — Rate display + Currency */}
+      <div className="border-b border-[#292929] px-5 py-5 space-y-5">
+        <div className="space-y-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#292929]/60">
+            Rate / Display
           </div>
           <Select value={mode} onValueChange={v => v && setMode(v as RateMode)}>
-            <SelectTrigger className="w-full h-9 bg-white border-gray-200 text-gray-800 text-sm hover:bg-gray-50">
-              <SelectValue>{(v: string) => v === 'hourly' ? 'Hourly' : 'Daily'}</SelectValue>
+            <SelectTrigger className="h-9 w-full text-[13px]">
+              <SelectValue>
+                {(v: string) => (v === 'hourly' ? 'Hourly' : 'Daily')}
+              </SelectValue>
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="daily">Daily</SelectItem>
@@ -71,44 +87,47 @@ export default function Nav() {
             </SelectContent>
           </Select>
         </div>
-        <div>
-          <div className="flex items-center gap-1.5 text-xs font-medium text-gray-500 mb-1.5 px-1 uppercase tracking-wider">
-            <Coins className="h-3 w-3" />
+
+        <div className="space-y-2">
+          <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#292929]/60">
             Currency
           </div>
-          <Button
-            variant="outline"
-            className="w-full h-9 justify-between bg-white border-gray-200 text-gray-800 text-sm hover:bg-gray-50"
+          <button
+            type="button"
             onClick={() => setCurrencyMode(currencyMode === 'USD' ? 'EUR' : 'USD' as CurrencyMode)}
+            className="flex h-9 w-full items-center justify-between border border-[#292929] bg-[#ffffff] px-3 font-mono text-[12px] uppercase tracking-[0.2em] text-[#292929] hover:bg-[#292929] hover:text-[#ffffff] transition-colors"
           >
-            <span>{currencyMode === 'EUR' ? 'Euros (€)' : 'Dollars ($)'}</span>
-            <span className="text-xs text-gray-400">
+            <span>{currencyMode === 'EUR' ? 'EUR · €' : 'USD · $'}</span>
+            <span className="text-[10px] tracking-[0.2em] opacity-60">
               {currencyMode === 'USD' ? '→ €' : '→ $'}
             </span>
-          </Button>
+          </button>
         </div>
-        <Link href="/books/new">
-          <Button className="w-full bg-[#77BB91] hover:bg-[#5fa07a] text-white text-sm">
-            <Plus className="h-4 w-4 mr-1.5" />
-            New Pricing Book
-          </Button>
-        </Link>
       </div>
 
+      <div className="flex-1" />
+
       {profile && (
-        <div className="p-3 border-t border-gray-100">
-          <div className="flex items-center gap-2.5 px-1 py-1.5">
-            <div className="h-8 w-8 shrink-0 bg-foreground text-background flex items-center justify-center text-[11px] font-semibold">
+        <div className="border-t border-[#292929] px-5 py-4">
+          <div className="font-mono text-[10px] uppercase tracking-[0.25em] text-[#292929]/60 mb-2">
+            Operator
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center border border-[#292929] bg-[#292929] font-mono text-[11px] font-medium tracking-[0.1em] text-[#ffffff]">
               {profile.initials}
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-gray-900 truncate leading-tight">{profile.name}</p>
-              <p className="text-[10px] text-gray-500 truncate uppercase tracking-wider">{profile.role}</p>
+              <p className="truncate text-[14px] font-light leading-tight text-[#292929] tracking-[-0.02em]">
+                {profile.name}
+              </p>
+              <p className="truncate font-mono text-[10px] uppercase tracking-[0.2em] text-[#292929]/60">
+                {profile.role}
+              </p>
             </div>
             <button
               onClick={handleSignOut}
               title="Sign out"
-              className="h-7 w-7 flex items-center justify-center text-gray-400 hover:text-gray-900 hover:bg-gray-100"
+              className="flex h-8 w-8 items-center justify-center border border-[#292929] text-[#292929] hover:bg-[#292929] hover:text-[#ffffff] transition-colors"
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
