@@ -19,32 +19,31 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="login-stage min-h-screen w-full overflow-hidden bg-white px-5 py-8 text-foreground sm:px-8 lg:px-12">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-7xl items-center gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(420px,1.1fr)]">
+    <div className="login-stage min-h-screen w-full overflow-hidden px-5 py-8 text-foreground sm:px-8 lg:px-12">
+      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(360px,0.9fr)]">
         <main className="relative z-10 max-w-xl">
-          <div className="mb-10 space-y-3">
-            <h1 className="text-5xl font-semibold text-balance sm:text-6xl lg:text-7xl">
-              ProBook
+          <div className="mb-9 space-y-3">
+            <h1 className="text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
+              <span className="text-[#5fa07a]">pro</span>book
             </h1>
-            <p className="text-xl font-medium lowercase text-muted-foreground sm:text-2xl">
+            <p className="text-lg font-medium lowercase text-muted-foreground sm:text-xl">
               pricing made simple
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
             {PROFILES.map(p => (
               <button
                 key={p.id}
                 type="button"
                 onClick={() => handleSelect(p.id)}
-                className="group relative flex min-h-[190px] flex-col justify-between overflow-hidden border border-foreground/15 bg-white p-5 text-left text-card-foreground shadow-[8px_8px_0_0_rgba(17,24,39,0.08)] transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-1 hover:border-accent hover:shadow-[12px_12px_0_0_rgba(119,187,145,0.24)] focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+                className="group relative flex min-h-[168px] flex-col justify-between overflow-hidden border border-foreground/15 bg-white p-5 text-left text-card-foreground transition-colors hover:border-accent focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                <span className="absolute inset-x-0 top-0 h-1 bg-accent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
                 <span className="flex items-start justify-between gap-4">
                   <span className="flex h-14 w-14 shrink-0 items-center justify-center bg-foreground text-sm font-semibold text-background">
                     {p.initials}
                   </span>
-                  <ArrowRight className="mt-1 h-5 w-5 text-muted-foreground transition-transform duration-300 group-hover:translate-x-1 group-hover:text-accent" />
+                  <ArrowRight className="mt-1 h-5 w-5 text-muted-foreground transition-colors group-hover:text-accent" />
                 </span>
                 <span className="space-y-4">
                   <span>
@@ -57,38 +56,40 @@ export default function LoginPage() {
           </div>
         </main>
 
-        <KineticPricingGraphic />
+        <PricingProcessGraphic />
       </div>
     </div>
   );
 }
 
-function KineticPricingGraphic() {
+function PricingProcessGraphic() {
   return (
-    <aside className="login-kinetic-graphic relative min-h-[300px] sm:min-h-[380px] lg:min-h-[560px]" aria-hidden="true">
-      <div className="login-sheet login-sheet-back" />
-      <div className="login-sheet login-sheet-front">
-        <div className="login-sheet-title">
-          <span />
-          <span />
-          <span />
-        </div>
-        <div className="login-ledger-grid">
-          {Array.from({ length: 30 }, (_, index) => (
-            <span key={index} />
-          ))}
-        </div>
-        <div className="login-total-panel">
-          <span>GROSS MARGIN</span>
-          <strong>62.7%</strong>
-        </div>
-      </div>
-      <div className="login-ribbon login-ribbon-a" />
-      <div className="login-ribbon login-ribbon-b" />
-      <div className="login-ribbon login-ribbon-c" />
-      <div className="login-glint" />
-      <div className="login-axis login-axis-x" />
-      <div className="login-axis login-axis-y" />
+    <aside className="pricing-process-graphic hidden lg:block" aria-hidden="true">
+      <svg viewBox="0 0 520 420" role="img" className="h-auto w-full" fill="none">
+        <path className="process-muted" d="M78 330H442" strokeWidth="1.5" />
+        <path className="process-muted" d="M118 88V330" strokeWidth="1.5" />
+        <path className="process-muted" d="M198 88V330" strokeWidth="1.5" />
+        <path className="process-muted" d="M278 88V330" strokeWidth="1.5" />
+        <path className="process-muted" d="M358 88V330" strokeWidth="1.5" />
+        <path className="process-muted" d="M438 88V330" strokeWidth="1.5" />
+        <path className="process-muted" d="M78 250H442" strokeWidth="1.5" />
+        <path className="process-muted" d="M78 170H442" strokeWidth="1.5" />
+        <rect className="process-soft" x="96" y="240" width="48" height="90" />
+        <rect className="process-soft" x="176" y="198" width="48" height="132" />
+        <rect className="process-soft" x="256" y="152" width="48" height="178" />
+        <rect className="process-soft" x="336" y="118" width="48" height="212" />
+        <path className="process-ink" d="M98 276L178 246L258 204L338 156L418 112" strokeWidth="3" strokeLinecap="square" />
+        <circle className="process-green" cx="98" cy="276" r="8" />
+        <circle className="process-green" cx="178" cy="246" r="8" />
+        <circle className="process-green" cx="258" cy="204" r="8" />
+        <circle className="process-green" cx="338" cy="156" r="8" />
+        <circle className="process-green" cx="418" cy="112" r="8" />
+        <path className="process-ink" d="M132 112H192" strokeWidth="2.5" strokeLinecap="square" />
+        <path className="process-ink" d="M162 82V142" strokeWidth="2.5" strokeLinecap="square" />
+        <path className="process-ink" d="M326 92L390 156" strokeWidth="2.5" strokeLinecap="square" />
+        <path className="process-ink" d="M390 92L326 156" strokeWidth="2.5" strokeLinecap="square" />
+        <path className="process-green" d="M408 258H456V306H408z" />
+      </svg>
     </aside>
   );
 }

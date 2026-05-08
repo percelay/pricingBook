@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import AuthShell from "@/components/auth-shell";
 import { ProfileProvider } from "@/lib/profile";
 import { RateModeProvider } from "@/lib/rate-mode";
 import { CurrencyModeProvider } from "@/lib/currency-mode";
 
-const geist = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
+const inter = Inter({ variable: "--font-app-sans", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "probook",
@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${geist.variable} h-full`}>
+    <html lang="en" className={`${inter.variable} h-full`}>
       <body className="h-full antialiased flex">
         <ProfileProvider>
           <RateModeProvider>

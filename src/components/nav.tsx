@@ -33,7 +33,7 @@ export default function Nav() {
       <div className="px-5 py-6 border-b border-gray-100">
         <div className="flex items-center gap-2.5">
           <BookOpen className="h-5 w-5 text-[#77BB91]" />
-          <span className="font-semibold text-base tracking-tight lowercase">probook</span>
+          <span className="font-semibold text-base tracking-tight lowercase"><span className="text-[#5fa07a]">pro</span>book</span>
         </div>
       </div>
 
