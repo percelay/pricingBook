@@ -18,9 +18,22 @@ export default function LoginPage() {
     router.replace('/');
   }
 
+  const demoDate = new Date().toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+
   return (
-    <div className="login-stage min-h-screen w-full overflow-hidden px-5 py-8 text-foreground sm:px-8 lg:px-12">
-      <div className="mx-auto grid min-h-[calc(100vh-4rem)] w-full max-w-6xl items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(360px,0.9fr)]">
+    <div className="login-stage flex min-h-screen w-full flex-col overflow-hidden px-5 py-5 text-foreground sm:px-8 lg:px-12">
+      <header className="mx-auto flex w-full max-w-6xl items-center justify-between border-b border-foreground/10 pb-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+        <span>working demo</span>
+        <span className="hidden sm:inline">internal use only</span>
+        <span className="hidden md:inline">updates automatically</span>
+        <span>{demoDate}</span>
+      </header>
+
+      <div className="mx-auto grid min-h-[calc(100vh-9rem)] w-full max-w-6xl flex-1 items-center gap-12 lg:grid-cols-[minmax(0,0.88fr)_minmax(360px,0.9fr)]">
         <main className="relative z-10 max-w-xl">
           <div className="mb-9 space-y-3">
             <h1 className="text-5xl font-semibold tracking-tight text-balance sm:text-6xl lg:text-7xl">
@@ -58,6 +71,17 @@ export default function LoginPage() {
 
         <PricingProcessGraphic />
       </div>
+
+      <footer className="mx-auto grid w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-foreground/10 pt-4" aria-hidden="true">
+        <div className="h-px bg-foreground/20" />
+        <svg viewBox="0 0 180 28" className="h-7 w-44 text-[#5fa07a]" fill="none">
+          <path d="M3 16C22 4 34 4 52 16S82 28 101 16s31-12 50 0 20 10 26 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
+          <path d="M21 20H55M72 8h22M112 21h31" stroke="#111827" strokeOpacity="0.28" strokeWidth="1.5" strokeLinecap="square" />
+          <circle cx="62" cy="14" r="3.5" fill="#77bb91" />
+          <circle cx="104" cy="14" r="3.5" fill="#111827" fillOpacity="0.72" />
+        </svg>
+        <div className="h-px bg-foreground/20" />
+      </footer>
     </div>
   );
 }

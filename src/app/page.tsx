@@ -67,17 +67,19 @@ export default function Dashboard() {
         </Select>
       </div>
 
-      {filtered.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+      <section className="border border-gray-200 bg-white p-4">
+        {filtered.length === 0 ? (
+        <div className="text-center py-16 text-gray-400">
           <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
           <p className="font-medium text-gray-500">No pricing books found</p>
           <p className="text-sm mt-1">Try adjusting filters or create a new book</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map(book => <BookCard key={book.id} book={book} rateCards={rateCards} />)}
         </div>
       )}
+      </section>
     </div>
   );
 }
@@ -111,7 +113,7 @@ function BookCard({ book, rateCards }: { book: PricingBook; rateCards: RateCard[
 
   return (
     <Link href={`/books/${book.id}`}>
-      <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
+      <Card className="h-full cursor-pointer ring-gray-200 transition-colors hover:ring-[#77BB91]/70">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-2">
             <div className="min-w-0">

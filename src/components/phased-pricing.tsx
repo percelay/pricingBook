@@ -87,7 +87,7 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
   if (phasedRows.length === 0) {
     return (
       <div>
-        <Button variant="outline" onClick={() => onChange([createPhasedPricingRow()])}>
+        <Button variant="ghost" onClick={() => onChange([createPhasedPricingRow()])} className="border border-gray-200 text-gray-500 hover:border-[#77BB91]/50 hover:text-gray-800">
           <Plus className="mr-1.5 h-4 w-4" />
           Add phased pricing
         </Button>
@@ -96,7 +96,7 @@ export default function PhasedPricing({ rows, currencyMode, onChange }: Props) {
   }
 
   return (
-    <Card>
+    <Card className="ring-2 ring-[#77BB91]/45">
       <CardHeader className="pb-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>

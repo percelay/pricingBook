@@ -175,7 +175,7 @@ export default function NewBookPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-5">
-          <Card>
+          <Card className="ring-gray-200">
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Engagement Details</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -196,7 +196,7 @@ export default function NewBookPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="ring-2 ring-[#77BB91]/45">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-sm font-semibold text-gray-700">Team & Fees</CardTitle>
@@ -384,21 +384,10 @@ export default function NewBookPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
-            <CardContent>
-              <Textarea
-                placeholder="Assumptions, exclusions, or context..."
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={3}
-              />
-            </CardContent>
-          </Card>
         </div>
 
         <div className="space-y-4">
-          <Card>
+          <Card className="ring-2 ring-gray-900/15">
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
@@ -447,7 +436,7 @@ export default function NewBookPage() {
           </Card>
 
           {lineItems.length > 0 && (
-            <Card className="bg-zinc-50 border-zinc-200">
+            <Card className="bg-white ring-2 ring-[#77BB91]/35">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
                   <TrendingUp className="h-4 w-4 text-[#5fa07a]" />
@@ -499,26 +488,54 @@ export default function NewBookPage() {
       </div>
 
       {lineItems.length > 0 && (
-        <div className="mt-6">
-          {shouldShowWeeklyAllocation(showWeeklyAllocation, lineItems) ? (
+        <div className="mt-5 space-y-4">
+          <div className="flex flex-wrap items-center gap-2">
+            {!shouldShowWeeklyAllocation(showWeeklyAllocation, lineItems) && (
+              <Button
+                variant="ghost"
+                onClick={() => setShowWeeklyAllocation(true)}
+                className="border border-gray-200 text-gray-500 hover:border-[#77BB91]/50 hover:text-gray-800"
+              >
+                <Plus className="mr-1.5 h-4 w-4" />
+                Add weekly allocation
+              </Button>
+            )}
+            {(phasedPricing?.length ?? 0) === 0 && (
+              <PhasedPricing
+                rows={phasedPricing}
+                currencyMode={currencyMode}
+                onChange={setPhasedPricing}
+              />
+            )}
+          </div>
+          {shouldShowWeeklyAllocation(showWeeklyAllocation, lineItems) && (
             <EditableTimeline
               lineItems={lineItems}
               onChangeDays={(id, days) => updateField(id, 'days', days)}
               onRemoveSection={() => setShowWeeklyAllocation(false)}
             />
-          ) : (
-            <Button variant="outline" onClick={() => setShowWeeklyAllocation(true)}>
-              <Plus className="mr-1.5 h-4 w-4" />
-              Add weekly allocation
-            </Button>
           )}
+          {(phasedPricing?.length ?? 0) > 0 && (
           <PhasedPricing
             rows={phasedPricing}
             currencyMode={currencyMode}
             onChange={setPhasedPricing}
           />
+          )}
         </div>
       )}
+
+      <Card className="mt-5 ring-gray-200">
+        <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
+        <CardContent>
+          <Textarea
+            placeholder="Assumptions, exclusions, or context..."
+            value={notes}
+            onChange={e => setNotes(e.target.value)}
+            rows={3}
+          />
+        </CardContent>
+      </Card>
     </div>
   );
 }

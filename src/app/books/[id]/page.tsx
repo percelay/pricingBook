@@ -335,7 +335,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-5">
-          <Card>
+          <Card className="ring-gray-200">
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Rate Card Setup</CardTitle></CardHeader>
             <CardContent>
               <RateCardSelector
@@ -347,7 +347,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           </Card>
 
           {/* Line Items */}
-          <Card>
+          <Card className="ring-2 ring-[#77BB91]/45">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <CardTitle className="text-sm font-semibold text-gray-700">Team & Fees</CardTitle>
@@ -533,43 +533,55 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </CardContent>
           </Card>
 
-          {/* Editable weekly timeline */}
           {book.lineItems.length > 0 && (
-            shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) ? (
-              <EditableTimeline
-                lineItems={book.lineItems}
-                onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
-                onRemoveSection={() => patch('showWeeklyAllocation', false)}
-              />
-            ) : (
-              <Button variant="outline" onClick={() => patch('showWeeklyAllocation', true)}>
-                <Plus className="mr-1.5 h-4 w-4" />
-                Add weekly allocation
-              </Button>
-            )
+            <div className="space-y-4">
+              <div className="flex flex-wrap items-center gap-2">
+                {!shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) && (
+                  <Button
+                    variant="ghost"
+                    onClick={() => patch('showWeeklyAllocation', true)}
+                    className="border border-gray-200 text-gray-500 hover:border-[#77BB91]/50 hover:text-gray-800"
+                  >
+                    <Plus className="mr-1.5 h-4 w-4" />
+                    Add weekly allocation
+                  </Button>
+                )}
+                {(book.phasedPricing?.length ?? 0) === 0 && (
+                  <PhasedPricing
+                    rows={book.phasedPricing}
+                    currencyMode={currencyMode}
+                    onChange={rows => patch('phasedPricing', rows)}
+                  />
+                )}
+              </div>
+              {shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems) && (
+                <EditableTimeline
+                  lineItems={book.lineItems}
+                  onChangeDays={(itemId, days) => updateLineItemField(itemId, 'days', days)}
+                  onRemoveSection={() => patch('showWeeklyAllocation', false)}
+                />
+              )}
+              {(book.phasedPricing?.length ?? 0) > 0 && (
+                <PhasedPricing
+                  rows={book.phasedPricing}
+                  currencyMode={currencyMode}
+                  onChange={rows => patch('phasedPricing', rows)}
+                />
+              )}
+            </div>
           )}
 
-          {/* Notes */}
-          <Card>
+          <Card className="ring-gray-200">
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Notes</CardTitle></CardHeader>
             <CardContent>
               <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={4} placeholder="Assumptions, exclusions, context..." />
             </CardContent>
           </Card>
-
-          {/* Phased Pricing */}
-          {book.lineItems.length > 0 && (
-            <PhasedPricing
-              rows={book.phasedPricing}
-              currencyMode={currencyMode}
-              onChange={rows => patch('phasedPricing', rows)}
-            />
-          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-4">
-          <Card>
+          <Card className="ring-2 ring-gray-900/15">
             <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-2">
@@ -619,7 +631,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
           {/* Profitability */}
           {book.lineItems.length > 0 && (
-            <Card className="bg-zinc-50 border-zinc-200">
+            <Card className="bg-white ring-2 ring-[#77BB91]/35">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
                   <TrendingUp className="h-4 w-4 text-[#5fa07a]" />
@@ -659,7 +671,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           )}
 
           {book.lineItems.length > 0 && (
-            <Card>
+            <Card className="ring-gray-100">
               <CardHeader>
                 <CardTitle className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Margin by Role</CardTitle>
               </CardHeader>
@@ -689,7 +701,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             </Card>
           )}
 
-          <Card>
+          <Card className="ring-gray-100">
             <CardContent className="pt-4 text-xs text-gray-400 space-y-1">
               <div>Created {new Date(book.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
               <div>Updated {new Date(book.updatedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>

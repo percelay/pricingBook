@@ -64,7 +64,7 @@ export default function EditableTimeline({ lineItems, onChangeDays, onRemoveSect
   const totalColWidth = 64;
 
   return (
-    <Card>
+    <Card className="ring-2 ring-[#77BB91]/45">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-sm font-semibold text-gray-700">Weekly Allocation</CardTitle>
