@@ -82,9 +82,9 @@ function moveFrom(root: HTMLElement, current: NavInput, direction: 'left' | 'rig
 
   const nextByOrder =
     direction === 'next' || direction === 'right'
-      ? inputs[index + 1]
+      ? inputs[index + 1] ?? (direction === 'next' ? inputs[0] : undefined)
       : direction === 'previous' || direction === 'left'
-        ? inputs[index - 1]
+        ? inputs[index - 1] ?? (direction === 'previous' ? inputs[inputs.length - 1] : undefined)
         : undefined;
 
   const nextByPosition =
@@ -121,7 +121,13 @@ export function usePricingKeyboardNav(rootRef: RefObject<HTMLElement | null>) {
       const mode = event.target.dataset.pricingPointerIntent === 'edit' ? 'edit' : 'navigate';
       delete event.target.dataset.pricingPointerIntent;
       setMode(event.target, mode);
-      if (mode === 'navigate') event.target.select();
+      if (mode === 'navigate') {
+        try {
+          event.target.select();
+        } catch {
+          // Keep focus visible even when a control cannot be selected.
+        }
+      }
     }
 
     function handleClick(event: MouseEvent) {
