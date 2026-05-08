@@ -13,7 +13,7 @@ function isNavInput(target: EventTarget | null): target is NavInput {
 
 function navInputs(root: HTMLElement): NavInput[] {
   return Array.from(root.querySelectorAll<NavInput>(`input[${NAV_ATTR}]`))
-    .filter(input => !input.disabled && input.type !== 'hidden');
+    .filter(input => !input.disabled && input.type !== 'hidden' && input.getClientRects().length > 0);
 }
 
 function setMode(input: NavInput, mode: 'edit' | 'navigate') {
