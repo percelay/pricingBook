@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use, type CSSProperties } from 'react';
+import { useState, useEffect, use, useRef, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
@@ -39,10 +39,13 @@ import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
 import ExportDialog from '@/components/export-dialog';
 import RateCardSelector from '@/components/rate-card-selector';
+import { usePricingKeyboardNav } from '@/lib/pricing-keyboard-nav';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
+  const keyboardNavRef = useRef<HTMLDivElement>(null);
+  usePricingKeyboardNav(keyboardNavRef);
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
   const [initialState] = useState(() => {
@@ -251,7 +254,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
+    <div ref={keyboardNavRef} className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
       {/* Header */}
       <div className="flex items-start justify-between mb-8">
         <div className="flex items-start gap-3">

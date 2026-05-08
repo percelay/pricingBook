@@ -29,7 +29,6 @@ export default function LoginPage() {
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between border-b border-foreground/10 pb-3 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
         <span>working demo</span>
         <span className="hidden sm:inline">internal use only</span>
-        <span className="hidden md:inline">updates automatically</span>
         <span>{demoDate}</span>
       </header>
 
@@ -74,11 +73,13 @@ export default function LoginPage() {
 
       <footer className="mx-auto grid w-full max-w-6xl grid-cols-[1fr_auto_1fr] items-center gap-4 border-t border-foreground/10 pt-4" aria-hidden="true">
         <div className="h-px bg-foreground/20" />
-        <svg viewBox="0 0 180 28" className="h-7 w-44 text-[#5fa07a]" fill="none">
-          <path d="M3 16C22 4 34 4 52 16S82 28 101 16s31-12 50 0 20 10 26 6" stroke="currentColor" strokeWidth="2" strokeLinecap="square" />
-          <path d="M21 20H55M72 8h22M112 21h31" stroke="#111827" strokeOpacity="0.28" strokeWidth="1.5" strokeLinecap="square" />
-          <circle cx="62" cy="14" r="3.5" fill="#77bb91" />
-          <circle cx="104" cy="14" r="3.5" fill="#111827" fillOpacity="0.72" />
+        <svg viewBox="0 0 220 36" className="h-9 w-56 text-[#5fa07a]" fill="none">
+          <path d="M3 20C25 5 40 5 62 20s37 15 59 0 38-15 60 0 24 12 36 5" stroke="currentColor" strokeWidth="2.5" strokeLinecap="square" />
+          <path d="M16 26C36 16 48 16 68 26s34 10 54 0 34-10 54 0" stroke="#77bb91" strokeOpacity="0.42" strokeWidth="2" strokeLinecap="square" />
+          <path d="M24 28H66M86 10h28M132 28h42" stroke="#111827" strokeOpacity="0.22" strokeWidth="1.5" strokeLinecap="square" />
+          <circle cx="78" cy="18" r="4" fill="#77bb91" />
+          <circle cx="124" cy="18" r="4" fill="#77bb91" fillOpacity="0.72" />
+          <circle cx="178" cy="18" r="4" fill="#3f7c57" />
         </svg>
         <div className="h-px bg-foreground/20" />
       </footer>

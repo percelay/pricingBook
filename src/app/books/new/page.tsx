@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
@@ -34,9 +34,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
 import RateCardSelector from '@/components/rate-card-selector';
+import { usePricingKeyboardNav } from '@/lib/pricing-keyboard-nav';
 
 export default function NewBookPage() {
   const router = useRouter();
+  const keyboardNavRef = useRef<HTMLDivElement>(null);
+  usePricingKeyboardNav(keyboardNavRef);
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
   const [rateCards] = useState<RateCard[]>(() => {
@@ -160,7 +163,7 @@ export default function NewBookPage() {
   const sym = currencySymbol(currencyMode);
 
   return (
-    <div className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
+    <div ref={keyboardNavRef} className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
       <div className="flex items-center gap-3 mb-8">
         <Link href="/">
           <Button variant="ghost" size="icon">
