@@ -339,7 +339,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-5">
           <div className="px-1">
-            <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Rate Card</div>
+            <div className="text-sm font-medium text-gray-500 underline underline-offset-4 mb-2">Rate Card</div>
             <RateCardSelector
               value={rateCardSelection}
               rateCards={rateCards}
@@ -348,10 +348,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           </div>
 
           {/* Line Items */}
-          <Card className="ring-2 ring-[#77BB91]/70 shadow-md">
+          <Card className="ring-2 ring-gray-900 shadow-md">
             <CardHeader>
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <CardTitle className="text-base font-bold text-gray-900">Team & Fees</CardTitle>
+                <CardTitle className="text-lg font-bold text-gray-900 underline underline-offset-4">Team & Fees</CardTitle>
                 <Select onValueChange={v => v && addRole(v)} value={null}>
                   <SelectTrigger className="h-8 w-full text-sm sm:w-44">
                     <SelectValue placeholder="+ Add role" />
@@ -573,8 +573,8 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
           )}
 
           <div className="px-1">
-            <div className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-2">Notes</div>
-            <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={3} placeholder="Assumptions, exclusions, context..." className="border-0 border-b border-gray-200 rounded-none px-0 shadow-none focus-visible:ring-0 focus-visible:border-gray-400 resize-none" />
+            <div className="text-sm font-medium text-gray-500 underline underline-offset-4 mb-2">Notes</div>
+            <Textarea value={book.notes} onChange={e => patch('notes', e.target.value)} rows={4} placeholder="Assumptions, exclusions, context..." />
           </div>
         </div>
 
