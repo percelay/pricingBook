@@ -23,7 +23,7 @@ export type RateMode = 'daily' | 'hourly';
 export type CurrencyMode = 'USD' | 'EUR';
 
 export const HOURS_PER_DAY = 8;
-export const TARGET_MARGIN_PCT = 30;
+export const TARGET_MARGIN_PCT = 50;
 export const EUR_PER_USD = 0.92;
 
 export const CURRENCY_BY_REGION: Record<Region, Currency> = {
