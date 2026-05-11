@@ -2,7 +2,6 @@
 
 import { HYBRID_RATE_CARD_ID } from '@/lib/rate-card-selection';
 import { RateCard, REGION_FLAG } from '@/lib/types';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface RateCardSelectorProps {
@@ -17,10 +16,8 @@ export default function RateCardSelector({
   onChange,
 }: RateCardSelectorProps) {
   return (
-    <div className="space-y-1.5">
-      <Label>Rate Card</Label>
-      <Select value={value} onValueChange={next => next && onChange(next)}>
-        <SelectTrigger className="w-full">
+    <Select value={value} onValueChange={next => next && onChange(next)}>
+        <SelectTrigger className="h-8 w-full text-sm">
           <SelectValue placeholder="Select rate card">
             {(selected: string) => {
               if (selected === HYBRID_RATE_CARD_ID) return 'Hybrid';
@@ -38,6 +35,5 @@ export default function RateCardSelector({
           ))}
         </SelectContent>
       </Select>
-    </div>
   );
 }

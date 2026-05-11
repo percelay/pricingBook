@@ -338,13 +338,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
         <div className="space-y-5">
-          <div className="px-1">
-            <div className="text-sm font-medium text-gray-500 underline underline-offset-4 mb-2">Rate Card</div>
-            <RateCardSelector
-              value={rateCardSelection}
-              rateCards={rateCards}
-              onChange={updateRateCardSelection}
-            />
+          <div className="flex items-center gap-2 px-1">
+            <span className="text-xs text-gray-400 shrink-0">Rate card</span>
+            <div className="w-56">
+              <RateCardSelector
+                value={rateCardSelection}
+                rateCards={rateCards}
+                onChange={updateRateCardSelection}
+              />
+            </div>
           </div>
 
           {/* Line Items */}

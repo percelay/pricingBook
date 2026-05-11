@@ -191,11 +191,14 @@ export default function NewBookPage() {
                   <Input placeholder="Digital Transformation" value={engagement} onChange={e => setEngagement(e.target.value)} />
                 </div>
               </div>
-              <RateCardSelector
-                value={rateCardSelection}
-                rateCards={rateCards}
-                onChange={handleRateCardSelection}
-              />
+              <div className="space-y-1.5">
+                <Label>Rate Card</Label>
+                <RateCardSelector
+                  value={rateCardSelection}
+                  rateCards={rateCards}
+                  onChange={handleRateCardSelection}
+                />
+              </div>
             </CardContent>
           </Card>
 
