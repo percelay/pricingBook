@@ -11,7 +11,7 @@ export function seedDemoData(): void {
   const cards: RateCard[] = [
     {
       id: 'rc-us-2025',
-      name: 'US Standard 2025',
+      name: 'US Standard 2026',
       region: 'US',
       currency: 'USD',
       roles: [
@@ -26,7 +26,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-us-acme',
-      name: 'Acme Corp — Premium 2025',
+      name: 'Acme Corp — Premium 2026',
       region: 'US',
       currency: 'USD',
       roles: [
@@ -41,7 +41,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-us-meridian',
-      name: 'Meridian Financial — Volume 2025',
+      name: 'Meridian Financial — Volume 2026',
       region: 'US',
       currency: 'USD',
       roles: [
@@ -56,7 +56,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-us-globex',
-      name: 'Globex Industries — MSA 2025',
+      name: 'Globex Industries — MSA 2026',
       region: 'US',
       currency: 'USD',
       roles: [
@@ -71,7 +71,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-fr-2025',
-      name: 'France Standard 2025',
+      name: 'France Standard 2026',
       region: 'France',
       currency: 'USD',
       roles: [
@@ -86,7 +86,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-fr-lafarge',
-      name: 'Lafarge Group — Custom 2025',
+      name: 'Lafarge Group — Custom 2026',
       region: 'France',
       currency: 'USD',
       roles: [
@@ -101,7 +101,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-uk-2025',
-      name: 'UK Standard 2025',
+      name: 'UK Standard 2026',
       region: 'England',
       currency: 'USD',
       roles: [
@@ -116,7 +116,7 @@ export function seedDemoData(): void {
     },
     {
       id: 'rc-uk-barclays',
-      name: 'Barclays — Banking 2025',
+      name: 'Barclays — Banking 2026',
       region: 'England',
       currency: 'USD',
       roles: [
@@ -144,7 +144,7 @@ export function seedDemoData(): void {
       engagement: 'Supply Chain Transformation',
       region: 'US',
       baseRateCardId: 'rc-us-acme',
-      baseRateCardName: 'Acme Corp — Premium 2025',
+      baseRateCardName: 'Acme Corp — Premium 2026',
       status: 'Final',
       discount: 5,
       markup: 0,
@@ -166,7 +166,7 @@ export function seedDemoData(): void {
       engagement: 'Digital Strategy Review',
       region: 'US',
       baseRateCardId: 'rc-us-meridian',
-      baseRateCardName: 'Meridian Financial — Volume 2025',
+      baseRateCardName: 'Meridian Financial — Volume 2026',
       status: 'Draft',
       discount: 0,
       markup: 10,
@@ -187,7 +187,7 @@ export function seedDemoData(): void {
       engagement: 'Operational Excellence',
       region: 'France',
       baseRateCardId: 'rc-fr-lafarge',
-      baseRateCardName: 'Lafarge Group — Custom 2025',
+      baseRateCardName: 'Lafarge Group — Custom 2026',
       status: 'Draft',
       discount: 0,
       markup: 0,
@@ -208,7 +208,7 @@ export function seedDemoData(): void {
       engagement: 'Wholesale Banking Modernization',
       region: 'England',
       baseRateCardId: 'rc-uk-barclays',
-      baseRateCardName: 'Barclays — Banking 2025',
+      baseRateCardName: 'Barclays — Banking 2026',
       status: 'Draft',
       discount: 0,
       markup: 0,
@@ -230,7 +230,7 @@ export function seedDemoData(): void {
       engagement: 'M&A Integration Planning',
       region: 'US',
       baseRateCardId: 'rc-us-globex',
-      baseRateCardName: 'Globex Industries — MSA 2025',
+      baseRateCardName: 'Globex Industries — MSA 2026',
       status: 'Final',
       discount: 0,
       markup: 5,
