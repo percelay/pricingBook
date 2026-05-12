@@ -305,7 +305,7 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               weeklyAllocation: shouldShowWeeklyAllocation(book.showWeeklyAllocation, book.lineItems),
               phasedPricing: (book.phasedPricing?.length ?? 0) > 0,
             }}
-            onConfirm={(options: ExportOptions) => exportBookToExcel(book, options)}
+            onConfirm={(options: ExportOptions) => exportBookToExcel(book, rateCards, options)}
           />
           <Sheet>
             <SheetTrigger render={<Button variant="outline" size="sm" />}>

@@ -154,7 +154,7 @@ test('workbook omits modular sheets until the user adds them', () => {
 
   assert.deepEqual(
     workbook.worksheets.map(sheet => sheet.name),
-    ['Pricing Model', 'Handoff Notes']
+    ['Pricing', 'Handoff Notes']
   );
 });
 
@@ -175,7 +175,7 @@ test('workbook includes weekly allocation and phased pricing only when enabled',
 
   assert.deepEqual(
     workbook.worksheets.map(sheet => sheet.name),
-    ['Pricing Model', 'Weekly Allocation', 'Phased Pricing', 'Handoff Notes']
+    ['Pricing', 'Weekly Allocation', 'Phased Pricing', 'Handoff Notes']
   );
 });
 
@@ -235,24 +235,36 @@ test('hybrid rate card selection dedupes, falls back, and reassigns removed card
   assert.equal(reassigned[0].dailyCost, 500);
 });
 
-test('pricing model export includes consultant-level rate cards without region columns', () => {
-  const workbook = buildBookWorkbook(book({
-    region: 'Hybrid',
-    baseRateCardId: HYBRID_RATE_CARD_ID,
-    baseRateCardName: 'Hybrid',
-    selectedRateCardIds: ['rc-us', 'rc-fr'],
-    lineItems: [
-      line({ id: 'li-us', rateCardId: 'rc-us', rateCardName: 'US Standard', rateCardRegion: 'US' }),
-      line({ id: 'li-fr', rateCardId: 'rc-fr', rateCardName: 'France Standard', rateCardRegion: 'France' }),
+test('pricing sheet renders consultant rows with practice tags that mark US vs RoW', () => {
+  const us = rateCard();
+  const france = rateCard({
+    id: 'rc-fr',
+    name: 'France Standard',
+    region: 'France',
+    roles: [
+      { role: 'Consultant', dailyRate: 1300, dailyCost: 480 },
+      { role: 'Manager', dailyRate: 2825, dailyCost: 1000 },
     ],
-  }));
+  });
 
-  const pricingSheet = workbook.getWorksheet('Pricing Model');
+  const workbook = buildBookWorkbook(
+    book({
+      region: 'Hybrid',
+      baseRateCardId: HYBRID_RATE_CARD_ID,
+      baseRateCardName: 'Hybrid',
+      selectedRateCardIds: ['rc-us', 'rc-fr'],
+      lineItems: [
+        line({ id: 'li-us', rateCardId: 'rc-us', rateCardName: 'US Standard', rateCardRegion: 'US' }),
+        line({ id: 'li-fr', rateCardId: 'rc-fr', rateCardName: 'France Standard', rateCardRegion: 'France' }),
+      ],
+    }),
+    [us, france]
+  );
 
-  assert.ok(pricingSheet);
-  assert.equal(pricingSheet.getCell('C23').value, 'Rate Card');
-  assert.equal(pricingSheet.getCell('D23').value, 'Total Days');
-  assert.equal(pricingSheet.getCell('C24').value, 'US Standard');
-  assert.equal(pricingSheet.getCell('C25').value, 'France Standard');
-  assert.notEqual(pricingSheet.getCell('A5').value, 'Region');
+  const sheet = workbook.getWorksheet('Pricing');
+
+  assert.ok(sheet);
+  assert.equal(sheet.getCell('A17').value, 'Wavestone Level');
+  assert.equal(sheet.getCell('S18').value, 'US Standard (US)');
+  assert.equal(sheet.getCell('S19').value, 'France Standard (RoW)');
 });
