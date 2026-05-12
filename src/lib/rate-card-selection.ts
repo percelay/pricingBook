@@ -62,6 +62,11 @@ export function buildLineItemFromRateCard(id: string, role: Role, card: RateCard
   }, card);
 }
 
+export function rateCardRateForLineItem(item: LineItem, cards: RateCard[], fallbackCard?: RateCard): number | undefined {
+  const card = cards.find(candidate => candidate.id === item.rateCardId) ?? fallbackCard;
+  return card?.roles.find(rate => rate.role === item.role)?.dailyRate;
+}
+
 export function reassignLineItemsToAvailableCards(
   lineItems: LineItem[],
   cards: RateCard[],

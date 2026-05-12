@@ -1,12 +1,38 @@
-import { RateCard, PricingBook } from './types';
-import { getRateCards, upsertRateCard, getPricingBooks, upsertPricingBook, ensureSchema } from './store';
+import { Employee, RateCard, PricingBook } from './types';
+import { getRateCards, upsertRateCard, getPricingBooks, upsertPricingBook, ensureSchema, getEmployees, upsertEmployee } from './store';
 import { uniformDays } from './calculations';
 
 export function seedDemoData(): void {
   ensureSchema();
-  if (getRateCards().length > 0) return;
 
   const now = new Date().toISOString();
+
+  if (getEmployees().length === 0) {
+    const employees: Employee[] = [
+      { id: 'emp-sarah-chen', name: 'Sarah Chen', group: 'BUS', role: 'Partner', createdAt: now, updatedAt: now },
+      { id: 'emp-marcus-webb', name: 'Marcus Webb', group: 'TECH', role: 'Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-david-park', name: 'David Park', group: 'CYB', role: 'Senior Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-priya-patel', name: 'Priya Patel', group: 'TECH', role: 'Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-james-wilson', name: 'James Wilson', group: 'BUS', role: 'Partner', createdAt: now, updatedAt: now },
+      { id: 'emp-lisa-tanaka', name: 'Lisa Tanaka', group: 'BUS', role: 'Senior Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-roberto-silva', name: 'Roberto Silva', group: 'TECH', role: 'Senior Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-pierre-dubois', name: 'Pierre Dubois', group: 'BUS', role: 'Partner', createdAt: now, updatedAt: now },
+      { id: 'emp-elena-marchetti', name: 'Elena Marchetti', group: 'TECH', role: 'Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-amit-kumar', name: 'Amit Kumar', group: 'TECH', role: 'Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-oliver-hartwell', name: 'Oliver Hartwell', group: 'BUS', role: 'Partner', createdAt: now, updatedAt: now },
+      { id: 'emp-charlotte-reeves', name: 'Charlotte Reeves', group: 'BUS', role: 'Senior Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-rohan-mehta', name: 'Rohan Mehta', group: 'CYB', role: 'Senior Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-freya-walsh', name: 'Freya Walsh', group: 'TECH', role: 'Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-helena-reyes', name: 'Helena Reyes', group: 'BUS', role: 'Partner', createdAt: now, updatedAt: now },
+      { id: 'emp-tom-obrien', name: "Tom O'Brien", group: 'TECH', role: 'Senior Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-yuki-tanaka', name: 'Yuki Tanaka', group: 'TECH', role: 'Manager', createdAt: now, updatedAt: now },
+      { id: 'emp-nadia-hassan', name: 'Nadia Hassan', group: 'CYB', role: 'Senior Consultant', createdAt: now, updatedAt: now },
+      { id: 'emp-devon-brooks', name: 'Devon Brooks', group: 'TECH', role: 'Contractor', createdAt: now, updatedAt: now },
+    ];
+    employees.forEach(upsertEmployee);
+  }
+
+  if (getRateCards().length > 0) return;
 
   const cards: RateCard[] = [
     {

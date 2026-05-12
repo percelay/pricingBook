@@ -4,9 +4,9 @@ import { useState, useEffect, use, useRef, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, History, Trash2, Check, Save, TrendingUp, Target, Plus } from 'lucide-react';
-import { getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
+import { getEmployees, getPricingBook, upsertPricingBook, deletePricingBook, getRateCards } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
+import { Employee, PricingBook, LineItem, ROLES, RateCard, TARGET_MARGIN_PCT, REGION_FLAG } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, lineCost, totalDays,
   toDisplayValue, fromInputValue, rateUnit, isUniform, averageDaysPerWeek,
@@ -19,6 +19,7 @@ import {
   HYBRID_RATE_CARD_ID,
   isHybridRateCardSelection,
   normalizeRateCardIds,
+  rateCardRateForLineItem,
   rateCardIdsForSelection,
   reassignLineItemsToAvailableCards,
   selectedRateCards,
@@ -39,6 +40,9 @@ import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
 import ExportDialog from '@/components/export-dialog';
 import RateCardSelector from '@/components/rate-card-selector';
+import EmployeeSelector from '@/components/employee-selector';
+import ExternalTeam from '@/components/external-team';
+import RateVarianceNote from '@/components/rate-variance-note';
 import { usePricingKeyboardNav } from '@/lib/pricing-keyboard-nav';
 
 export default function BookDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,10 +57,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
     return {
       book: getPricingBook(id) ?? null,
       rateCards: getRateCards(),
+      employees: getEmployees(),
     };
   });
   const [book, setBook] = useState<PricingBook | null>(() => initialState.book);
   const [rateCards] = useState<RateCard[]>(() => initialState.rateCards);
+  const [employees] = useState<Employee[]>(() => initialState.employees);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
@@ -228,8 +234,9 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
             baseRateCardId: updatedRateCardId,
             baseRateCardName: updatedRateCardName,
             selectedRateCardIds: bookRateCardIds,
+            pricingModel: book.pricingModel,
             status, discount: book.discount, markup: book.markup, tePercent: book.tePercent,
-            lineItems: book.lineItems, showWeeklyAllocation: book.showWeeklyAllocation, phasedPricing: book.phasedPricing, notes: book.notes,
+            lineItems: book.lineItems, showWeeklyAllocation: book.showWeeklyAllocation, phasedPricing: book.phasedPricing, externalTeam: book.externalTeam, notes: book.notes,
           },
         },
       ],
@@ -381,15 +388,15 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                       const uniform = isUniform(item.days);
                       const avgDpw = averageDaysPerWeek(item.days);
                       const itemRateCardId = selectedRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : selectedRateCardIds[0] ?? '';
+                      const cardDailyRate = rateCardRateForLineItem(item, rateCards, activeRateCards[0]);
                       return (
                         <div key={item.id}>
                           <div className="hidden items-center gap-1.5 md:grid md:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
                             <span className="min-w-0 truncate text-sm font-medium text-gray-800">{item.role}</span>
-                            <Input
-                              placeholder="Consultant name"
+                            <EmployeeSelector
+                              employees={employees}
                               value={item.name}
-                              onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
-                              className="h-8 min-w-0 text-sm"
+                              onChange={value => updateLineItemField(item.id, 'name', value)}
                             />
                             {isHybrid && (
                               <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
@@ -425,13 +432,21 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                               className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
                             />
                             <div className="relative min-w-0">
-                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
-                              <Input
-                                type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                                value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
-                                onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
-                                className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
-                                placeholder="0"
+                              <div className="relative min-w-0">
+                                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                                <Input
+                                  type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                                  value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
+                                  onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                                  className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
+                                  placeholder="0"
+                                />
+                              </div>
+                              <RateVarianceNote
+                                currentDailyRate={item.dailyRate}
+                                cardDailyRate={cardDailyRate}
+                                currencyMode={currencyMode}
+                                rateMode={mode}
                               />
                             </div>
                             <span className="min-w-0 truncate text-right text-xs tabular-nums text-gray-400">
@@ -457,11 +472,10 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                             </div>
                             <div className="space-y-1">
                               <Label className="text-[10px] uppercase tracking-wider text-gray-400">Consultant</Label>
-                              <Input
-                                placeholder="Consultant name"
+                              <EmployeeSelector
+                                employees={employees}
                                 value={item.name}
-                                onChange={e => updateLineItemField(item.id, 'name', e.target.value)}
-                                className="h-8 min-w-0 text-sm"
+                                onChange={value => updateLineItemField(item.id, 'name', value)}
                               />
                             </div>
                             {isHybrid && (
@@ -526,6 +540,12 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
                                   placeholder="0"
                                 />
                               </div>
+                              <RateVarianceNote
+                                currentDailyRate={item.dailyRate}
+                                cardDailyRate={cardDailyRate}
+                                currencyMode={currencyMode}
+                                rateMode={mode}
+                              />
                             </div>
                           </div>
                         </div>
@@ -535,6 +555,14 @@ export default function BookDetailPage({ params }: { params: Promise<{ id: strin
               )}
             </CardContent>
           </Card>
+
+          <div className="px-1">
+            <ExternalTeam
+              rows={book.externalTeam}
+              currencyMode={currencyMode}
+              onChange={rows => patch('externalTeam', rows)}
+            />
+          </div>
 
           {book.lineItems.length > 0 && (
             <div className="space-y-4">

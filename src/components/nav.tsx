@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { BookOpen, LayoutDashboard, CreditCard, Plus, Clock, Coins, LogOut } from 'lucide-react';
+import { BookOpen, LayoutDashboard, CreditCard, Plus, Clock, Coins, LogOut, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import { RateMode, CurrencyMode } from '@/lib/types';
 const navItems = [
   { href: '/', label: 'Pricing', icon: LayoutDashboard },
   { href: '/rate-cards', label: 'Rate Cards', icon: CreditCard },
+  { href: '/employees', label: 'Employees', icon: Users },
 ];
 
 export default function Nav() {

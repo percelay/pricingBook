@@ -3,10 +3,10 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
-import { getRateCards, upsertPricingBook } from '@/lib/store';
+import { ArrowLeft, Check, CreditCard, FileSpreadsheet, Pencil, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
+import { getEmployees, getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { RateCard, LineItem, ROLES, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, REGION_FLAG } from '@/lib/types';
+import { Employee, RateCard, LineItem, ROLES, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, REGION_FLAG, PricingModel, ExternalTeamRow } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, toDisplayValue, fromInputValue,
   rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays, currencySymbol,
@@ -17,6 +17,7 @@ import {
   describeRateCardSelection,
   HYBRID_RATE_CARD_ID,
   isHybridRateCardSelection,
+  rateCardRateForLineItem,
   rateCardIdsForSelection,
   reassignLineItemsToAvailableCards,
   selectedRateCards,
@@ -34,6 +35,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import EditableTimeline from '@/components/engagement-timeline';
 import PhasedPricing from '@/components/phased-pricing';
 import RateCardSelector from '@/components/rate-card-selector';
+import EmployeeSelector from '@/components/employee-selector';
+import ExternalTeam from '@/components/external-team';
+import RateVarianceNote from '@/components/rate-variance-note';
 import { usePricingKeyboardNav } from '@/lib/pricing-keyboard-nav';
 
 export default function NewBookPage() {
@@ -42,19 +46,27 @@ export default function NewBookPage() {
   usePricingKeyboardNav(keyboardNavRef);
   const { mode } = useRateMode();
   const { mode: currencyMode } = useCurrencyMode();
-  const [rateCards] = useState<RateCard[]>(() => {
+  const [initialData] = useState<{ rateCards: RateCard[]; employees: Employee[] }>(() => {
     seedDemoData();
-    return getRateCards();
+    return {
+      rateCards: getRateCards(),
+      employees: getEmployees(),
+    };
   });
+  const [rateCards] = useState<RateCard[]>(initialData.rateCards);
+  const [employees] = useState<Employee[]>(initialData.employees);
   const [client, setClient] = useState('');
   const [engagement, setEngagement] = useState('');
   const [rateCardSelection, setRateCardSelection] = useState(() => rateCards[0]?.id ?? '');
+  const [pricingModel, setPricingModel] = useState<PricingModel | null>(null);
+  const [setupComplete, setSetupComplete] = useState(false);
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [showWeeklyAllocation, setShowWeeklyAllocation] = useState(false);
   const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
+  const [externalTeam, setExternalTeam] = useState<ExternalTeamRow[] | undefined>();
   const [notes, setNotes] = useState('');
 
   const isHybrid = isHybridRateCardSelection(rateCardSelection);
@@ -62,9 +74,11 @@ export default function NewBookPage() {
   const activeRateCards = selectedRateCards(rateCards, activeRateCardIds);
   const selectedCard = activeRateCards[0];
   const totals = calcTotals(lineItems, discount, markup, tePercent);
-  const canSave = client.trim() && engagement.trim() && activeRateCardIds.length > 0 && lineItems.length > 0;
+  const canStartPricing = activeRateCardIds.length > 0 && pricingModel !== null;
+  const canSave = client.trim() && engagement.trim() && activeRateCardIds.length > 0 && pricingModel !== null && lineItems.length > 0;
   const unit = rateUnit(mode);
   const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
+  const selectedRateCardLabel = describeRateCardSelection(rateCards, activeRateCardIds, isHybrid) || 'Select rate card';
   const teamGridTemplate = isHybrid
     ? 'minmax(0, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.16fr) minmax(0, 0.42fr) minmax(0, 0.42fr) minmax(0, 0.58fr) minmax(0, 0.52fr) minmax(0, 0.72fr) 28px'
     : 'minmax(0, 0.95fr) minmax(0, 1.25fr) minmax(0, 0.46fr) minmax(0, 0.46fr) minmax(0, 0.66fr) minmax(0, 0.58fr) minmax(0, 0.82fr) 28px';
@@ -144,6 +158,7 @@ export default function NewBookPage() {
       baseRateCardId: bookIsHybrid ? HYBRID_RATE_CARD_ID : bookRateCardIds[0] ?? '',
       baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds, bookIsHybrid),
       selectedRateCardIds: bookRateCardIds,
+      pricingModel,
       status,
       discount,
       markup,
@@ -151,6 +166,7 @@ export default function NewBookPage() {
       lineItems,
       showWeeklyAllocation,
       phasedPricing,
+      externalTeam,
       notes,
       versions: [],
       createdAt: new Date().toISOString(),
@@ -161,6 +177,7 @@ export default function NewBookPage() {
   }
 
   const sym = currencySymbol(currencyMode);
+  const pricingModelLabel = pricingModel === 'time-materials' ? 'Time & Materials' : 'Fixed Price';
 
   return (
     <div ref={keyboardNavRef} className="w-full max-w-[1280px] px-4 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7">
@@ -174,6 +191,79 @@ export default function NewBookPage() {
           <h1 className="text-2xl font-bold text-gray-900">New Pricing Book</h1>
           <p className="text-gray-500 mt-0.5">Create a pricing for a new client engagement</p>
         </div>
+      </div>
+
+      {!setupComplete && (
+        <section className="mx-auto max-w-5xl">
+          <div className="border border-gray-200 bg-white p-6 shadow-sm sm:p-8">
+            <div className="mb-7">
+              <p className="text-xs font-semibold uppercase tracking-wider text-[#5fa07a]">Pricing setup</p>
+              <h2 className="mt-2 text-2xl font-bold text-gray-900">Choose the pricing foundation</h2>
+            </div>
+            <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+              <div className="space-y-3 border border-gray-200 p-4">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-4 w-4 text-[#5fa07a]" />
+                  <h3 className="text-sm font-semibold text-gray-900">Rate Card</h3>
+                </div>
+                <RateCardSelector
+                  value={rateCardSelection}
+                  rateCards={rateCards}
+                  onChange={handleRateCardSelection}
+                />
+                <p className="text-xs text-gray-400">Selected: {selectedRateCardLabel}</p>
+              </div>
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setPricingModel('fixed')}
+                  className={`border p-4 text-left transition-colors ${pricingModel === 'fixed' ? 'border-[#77BB91] bg-[#77BB91]/10 ring-2 ring-[#77BB91]/40' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-900">Fixed Price</span>
+                    {pricingModel === 'fixed' && <Check className="h-4 w-4 text-[#5fa07a]" />}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-gray-500">Build a fixed-fee pricing book.</p>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPricingModel('time-materials')}
+                  className={`border p-4 text-left transition-colors ${pricingModel === 'time-materials' ? 'border-[#77BB91] bg-[#77BB91]/10 ring-2 ring-[#77BB91]/40' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-sm font-semibold text-gray-900">Time & Materials</span>
+                    {pricingModel === 'time-materials' && <Check className="h-4 w-4 text-[#5fa07a]" />}
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-gray-500">Track the book as T&M for now.</p>
+                </button>
+              </div>
+            </div>
+            <div className="mt-6 flex justify-end">
+              <Button onClick={() => setSetupComplete(true)} disabled={!canStartPricing}>
+                Continue to pricing
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {setupComplete && (
+      <>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border border-gray-200 bg-white px-3 py-2">
+        <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-gray-500">
+          <Badge variant="outline" className="max-w-[320px] truncate">
+            <CreditCard className="mr-1 h-3 w-3" />
+            {selectedRateCardLabel}
+          </Badge>
+          <Badge variant="secondary">
+            <FileSpreadsheet className="mr-1 h-3 w-3" />
+            {pricingModelLabel}
+          </Badge>
+        </div>
+        <Button variant="ghost" size="sm" onClick={() => setSetupComplete(false)} className="h-7 text-xs text-gray-500">
+          <Pencil className="mr-1 h-3 w-3" />
+          Edit setup
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_320px]">
@@ -190,14 +280,6 @@ export default function NewBookPage() {
                   <Label>Engagement Name</Label>
                   <Input placeholder="Digital Transformation" value={engagement} onChange={e => setEngagement(e.target.value)} />
                 </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Rate Card</Label>
-                <RateCardSelector
-                  value={rateCardSelection}
-                  rateCards={rateCards}
-                  onChange={handleRateCardSelection}
-                />
               </div>
             </CardContent>
           </Card>
@@ -235,15 +317,15 @@ export default function NewBookPage() {
                     const uniform = isUniform(item.days);
                     const avgDpw = averageDaysPerWeek(item.days);
                     const itemRateCardId = activeRateCardIds.includes(item.rateCardId ?? '') ? item.rateCardId ?? '' : activeRateCardIds[0] ?? '';
+                    const cardDailyRate = rateCardRateForLineItem(item, rateCards, selectedCard);
                     return (
                       <div key={item.id}>
                         <div className="hidden items-center gap-1.5 md:grid md:[grid-template-columns:var(--team-grid-template)]" style={teamGridStyle}>
                           <Badge variant="secondary" className="block max-w-full truncate text-xs">{item.role}</Badge>
-                          <Input
-                            placeholder="Consultant name"
+                          <EmployeeSelector
+                            employees={employees}
                             value={item.name}
-                            onChange={e => updateField(item.id, 'name', e.target.value)}
-                            className="h-8 min-w-0 text-sm"
+                            onChange={value => updateField(item.id, 'name', value)}
                           />
                           {isHybrid && (
                             <Select value={itemRateCardId} onValueChange={v => v && updateLineItemRateCard(item.id, v)}>
@@ -279,13 +361,21 @@ export default function NewBookPage() {
                             className="h-8 min-w-0 px-1.5 text-sm tabular-nums"
                           />
                           <div className="relative min-w-0">
-                            <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
-                            <Input
-                              type="number" min={0} step={mode === 'hourly' ? 5 : 50}
-                              value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
-                              onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
-                              className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
-                              placeholder="0"
+                            <div className="relative min-w-0">
+                              <span className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none">{sym}</span>
+                              <Input
+                                type="number" min={0} step={mode === 'hourly' ? 5 : 50}
+                                value={toDisplayValue(item.dailyRate, mode, currencyMode) || ''}
+                                onChange={e => updateRate(item.id, 'dailyRate', e.target.value)}
+                                className="h-8 min-w-0 pl-5 pr-1 text-sm tabular-nums"
+                                placeholder="0"
+                              />
+                            </div>
+                            <RateVarianceNote
+                              currentDailyRate={item.dailyRate}
+                              cardDailyRate={cardDailyRate}
+                              currencyMode={currencyMode}
+                              rateMode={mode}
                             />
                           </div>
                           <span className="min-w-0 truncate text-right text-xs tabular-nums text-gray-400">
@@ -311,11 +401,10 @@ export default function NewBookPage() {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-[10px] uppercase tracking-wider text-gray-400">Consultant</Label>
-                            <Input
-                              placeholder="Consultant name"
+                            <EmployeeSelector
+                              employees={employees}
                               value={item.name}
-                              onChange={e => updateField(item.id, 'name', e.target.value)}
-                              className="h-8 min-w-0 text-sm"
+                              onChange={value => updateField(item.id, 'name', value)}
                             />
                           </div>
                           {isHybrid && (
@@ -380,6 +469,12 @@ export default function NewBookPage() {
                                 placeholder="0"
                               />
                             </div>
+                            <RateVarianceNote
+                              currentDailyRate={item.dailyRate}
+                              cardDailyRate={cardDailyRate}
+                              currencyMode={currencyMode}
+                              rateMode={mode}
+                            />
                           </div>
                         </div>
                       </div>
@@ -389,6 +484,14 @@ export default function NewBookPage() {
               )}
             </CardContent>
           </Card>
+
+          <div className="px-1">
+            <ExternalTeam
+              rows={externalTeam}
+              currencyMode={currencyMode}
+              onChange={setExternalTeam}
+            />
+          </div>
 
         </div>
 
@@ -487,7 +590,7 @@ export default function NewBookPage() {
           </div>
           {!canSave && (
             <p className="text-xs text-gray-400 text-center leading-snug">
-              Fill client, engagement, and add at least one role
+              Fill client, engagement, setup, and add at least one role
             </p>
           )}
         </div>
@@ -542,6 +645,8 @@ export default function NewBookPage() {
           />
         </CardContent>
       </Card>
+      </>
+      )}
     </div>
   );
 }

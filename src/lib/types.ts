@@ -21,6 +21,8 @@ export type Currency = 'USD' | 'EUR';
 export type BookStatus = 'Draft' | 'Final';
 export type RateMode = 'daily' | 'hourly';
 export type CurrencyMode = 'USD' | 'EUR';
+export type EmployeeGroup = 'CYB' | 'TECH' | 'BUS';
+export type PricingModel = 'fixed' | 'time-materials';
 
 export const HOURS_PER_DAY = 8;
 export const TARGET_MARGIN_PCT = 50;
@@ -58,6 +60,15 @@ export interface RateCard {
   createdAt: string;
 }
 
+export interface Employee {
+  id: string;
+  name: string;
+  group: EmployeeGroup;
+  role?: Role;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface LineItem {
   id: string;
   role: Role;
@@ -80,6 +91,15 @@ export interface PhasedPricingRow {
   proposedFee: number;
 }
 
+export interface ExternalTeamRow {
+  id: string;
+  name: string;
+  role: string;
+  description: string;
+  price: number;
+  cost: number;
+}
+
 export interface PricingBookData {
   client: string;
   engagement: string;
@@ -87,6 +107,7 @@ export interface PricingBookData {
   baseRateCardId: string;
   baseRateCardName: string;
   selectedRateCardIds?: string[];
+  pricingModel?: PricingModel;
   status: BookStatus;
   discount: number;
   markup: number;
@@ -94,6 +115,7 @@ export interface PricingBookData {
   lineItems: LineItem[];
   showWeeklyAllocation?: boolean;
   phasedPricing?: PhasedPricingRow[];
+  externalTeam?: ExternalTeamRow[];
   notes: string;
 }
 

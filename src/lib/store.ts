@@ -1,7 +1,8 @@
-import { RateCard, PricingBook } from './types';
+import { Employee, RateCard, PricingBook } from './types';
 
 const RATE_CARDS_KEY = 'pb:rate_cards';
 const BOOKS_KEY = 'pb:pricing_books';
+const EMPLOYEES_KEY = 'pb:employees';
 const SCHEMA_KEY = 'pb:schema_version';
 const SCHEMA_VERSION = '4';
 
@@ -44,6 +45,22 @@ export function upsertRateCard(card: RateCard): void {
 
 export function deleteRateCard(id: string): void {
   set(RATE_CARDS_KEY, getRateCards().filter(c => c.id !== id));
+}
+
+export function getEmployees(): Employee[] {
+  return get<Employee[]>(EMPLOYEES_KEY, []);
+}
+
+export function upsertEmployee(employee: Employee): void {
+  const employees = getEmployees();
+  const i = employees.findIndex(e => e.id === employee.id);
+  if (i >= 0) employees[i] = employee;
+  else employees.unshift(employee);
+  set(EMPLOYEES_KEY, employees);
+}
+
+export function deleteEmployee(id: string): void {
+  set(EMPLOYEES_KEY, getEmployees().filter(e => e.id !== id));
 }
 
 export function getPricingBooks(): PricingBook[] {
