@@ -3,10 +3,10 @@
 import { useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Check, CreditCard, FileSpreadsheet, Pencil, Plus, Trash2, TrendingUp, Target } from 'lucide-react';
+import { ArrowLeft, Check, CreditCard, FileSpreadsheet, Pencil, Plus, Trash2 } from 'lucide-react';
 import { getEmployees, getRateCards, upsertPricingBook } from '@/lib/store';
 import { seedDemoData } from '@/lib/seed';
-import { Employee, RateCard, LineItem, ROLES, PricingBook, TARGET_MARGIN_PCT, PhasedPricingRow, REGION_FLAG, PricingModel, ExternalTeamRow } from '@/lib/types';
+import { Employee, RateCard, LineItem, ROLES, PricingBook, PhasedPricingRow, REGION_FLAG, PricingModel, ExternalTeamRow, PricingAssumptionMode } from '@/lib/types';
 import {
   calcTotals, formatMoney, lineSubtotal, toDisplayValue, fromInputValue,
   rateUnit, isUniform, averageDaysPerWeek, uniformDays, resizeDays, currencySymbol,
@@ -37,7 +37,8 @@ import PhasedPricing from '@/components/phased-pricing';
 import RateCardSelector from '@/components/rate-card-selector';
 import EmployeeSelector from '@/components/employee-selector';
 import ExternalTeam from '@/components/external-team';
-import RateVarianceNote from '@/components/rate-variance-note';
+import RateVarianceNote, { OnRateColumnNote } from '@/components/rate-variance-note';
+import PricingSummaryCard from '@/components/pricing-summary-card';
 import { usePricingKeyboardNav } from '@/lib/pricing-keyboard-nav';
 
 export default function NewBookPage() {
@@ -60,9 +61,13 @@ export default function NewBookPage() {
   const [rateCardSelection, setRateCardSelection] = useState(() => rateCards[0]?.id ?? '');
   const [pricingModel, setPricingModel] = useState<PricingModel | null>(null);
   const [setupComplete, setSetupComplete] = useState(false);
+  const [pricingAssumptionMode, setPricingAssumptionMode] = useState<PricingAssumptionMode>('percent');
   const [discount, setDiscount] = useState(0);
   const [markup, setMarkup] = useState(0);
   const [tePercent, setTePercent] = useState(0);
+  const [discountFlat, setDiscountFlat] = useState(0);
+  const [markupFlat, setMarkupFlat] = useState(0);
+  const [teFlat, setTeFlat] = useState(0);
   const [lineItems, setLineItems] = useState<LineItem[]>([]);
   const [showWeeklyAllocation, setShowWeeklyAllocation] = useState(false);
   const [phasedPricing, setPhasedPricing] = useState<PhasedPricingRow[] | undefined>();
@@ -73,12 +78,21 @@ export default function NewBookPage() {
   const activeRateCardIds = rateCardIdsForSelection(rateCardSelection, rateCards);
   const activeRateCards = selectedRateCards(rateCards, activeRateCardIds);
   const selectedCard = activeRateCards[0];
-  const totals = calcTotals(lineItems, discount, markup, tePercent);
+  const totals = calcTotals(
+    lineItems,
+    discount,
+    markup,
+    tePercent,
+    pricingAssumptionMode === 'flat' ? { discountFlat, markupFlat, teFlat } : undefined
+  );
   const canStartPricing = activeRateCardIds.length > 0 && pricingModel !== null;
   const canSave = client.trim() && engagement.trim() && activeRateCardIds.length > 0 && pricingModel !== null && lineItems.length > 0;
   const unit = rateUnit(mode);
-  const aboveTarget = totals.grossMarginPct >= TARGET_MARGIN_PCT;
   const selectedRateCardLabel = describeRateCardSelection(rateCards, activeRateCardIds, isHybrid) || 'Select rate card';
+  const allLineItemsOnRate = lineItems.length > 0 && lineItems.every(item => {
+    const cardDailyRate = rateCardRateForLineItem(item, rateCards, selectedCard);
+    return cardDailyRate !== undefined && Math.abs(item.dailyRate - cardDailyRate) < 0.005;
+  });
   const teamGridTemplate = isHybrid
     ? 'minmax(0, 0.86fr) minmax(0, 1.05fr) minmax(0, 1.16fr) minmax(0, 0.42fr) minmax(0, 0.42fr) minmax(0, 0.58fr) minmax(0, 0.52fr) minmax(0, 0.72fr) 28px'
     : 'minmax(0, 0.95fr) minmax(0, 1.25fr) minmax(0, 0.46fr) minmax(0, 0.46fr) minmax(0, 0.66fr) minmax(0, 0.58fr) minmax(0, 0.82fr) 28px';
@@ -159,10 +173,14 @@ export default function NewBookPage() {
       baseRateCardName: describeRateCardSelection(rateCards, bookRateCardIds, bookIsHybrid),
       selectedRateCardIds: bookRateCardIds,
       pricingModel,
+      pricingAssumptionMode,
       status,
       discount,
       markup,
       tePercent,
+      discountFlat,
+      markupFlat,
+      teFlat,
       lineItems,
       showWeeklyAllocation,
       phasedPricing,
@@ -480,6 +498,7 @@ export default function NewBookPage() {
                       </div>
                     );
                   })}
+                  {allLineItemsOnRate && <OnRateColumnNote isHybrid={isHybrid} />}
                 </div>
               )}
             </CardContent>
@@ -496,93 +515,25 @@ export default function NewBookPage() {
         </div>
 
         <div className="space-y-4">
-          <Card className="ring-2 ring-gray-900/15">
-            <CardHeader><CardTitle className="text-sm font-semibold text-gray-700">Pricing Summary</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Discount %</Label>
-                  <Input type="number" min={0} max={100} value={discount || ''} onChange={e => setDiscount(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">Markup %</Label>
-                  <Input type="number" min={0} value={markup || ''} onChange={e => setMarkup(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-xs">T&amp;E %</Label>
-                  <Input type="number" min={0} value={tePercent || ''} onChange={e => setTePercent(Number(e.target.value) || 0)} placeholder="0" className="h-8 text-sm tabular-nums" />
-                </div>
-              </div>
-              <div className="border-t pt-3 space-y-2 text-sm">
-                <div className="flex justify-between text-gray-500">
-                  <span>Subtotal</span>
-                  <span className="tabular-nums">{formatMoney(totals.subtotal, currencyMode)}</span>
-                </div>
-                {discount > 0 && (
-                  <div className="flex justify-between text-gray-500">
-                    <span>Discount ({discount}%)</span>
-                    <span className="tabular-nums">-{formatMoney(totals.discountAmount, currencyMode)}</span>
-                  </div>
-                )}
-                {markup > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>Markup ({markup}%)</span>
-                    <span className="tabular-nums">+{formatMoney(totals.markupAmount, currencyMode)}</span>
-                  </div>
-                )}
-                {tePercent > 0 && (
-                  <div className="flex justify-between text-gray-700">
-                    <span>T&amp;E ({tePercent}%)</span>
-                    <span className="tabular-nums">+{formatMoney(totals.teAmount, currencyMode)}</span>
-                  </div>
-                )}
-                <div className="flex justify-between font-bold text-gray-900 text-base pt-1.5 border-t">
-                  <span>Total</span>
-                  <span className="tabular-nums">{formatMoney(totals.grandTotal, currencyMode)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {lineItems.length > 0 && (
-            <Card className="bg-white ring-2 ring-[#77BB91]/35">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
-                  <TrendingUp className="h-4 w-4 text-[#5fa07a]" />
-                  Profitability
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <div className="flex justify-between text-gray-500">
-                  <span>Net Fees</span>
-                  <span className="tabular-nums">{formatMoney(totals.afterMarkup, currencyMode)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Internal Cost</span>
-                  <span className="tabular-nums">-{formatMoney(totals.totalCost, currencyMode)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-gray-900 pt-1.5 border-t border-zinc-200">
-                  <span>Gross Margin</span>
-                  <span className="tabular-nums">{formatMoney(totals.grossMargin, currencyMode)}</span>
-                </div>
-                <div className="flex justify-between text-gray-500">
-                  <span>Average Daily Rate (ADR)</span>
-                  <span className="tabular-nums">{formatMoney(totals.averageDailyRate, currencyMode)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <Target className="h-3 w-3" /> Target {TARGET_MARGIN_PCT}%
-                  </span>
-                  <span className={`tabular-nums text-base font-bold ${aboveTarget ? 'text-[#5fa07a]' : 'text-red-500'}`}>
-                    {totals.grossMarginPct.toFixed(1)}%
-                  </span>
-                </div>
-                <div className={`text-[11px] text-right font-medium ${aboveTarget ? 'text-[#5fa07a]' : 'text-red-500'}`}>
-                  {aboveTarget ? '+' : ''}{(totals.grossMarginPct - TARGET_MARGIN_PCT).toFixed(1)} pts vs target
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <PricingSummaryCard
+            totals={totals}
+            currencyMode={currencyMode}
+            mode={pricingAssumptionMode}
+            onModeChange={setPricingAssumptionMode}
+            discount={discount}
+            markup={markup}
+            tePercent={tePercent}
+            discountFlat={discountFlat}
+            markupFlat={markupFlat}
+            teFlat={teFlat}
+            onDiscountChange={setDiscount}
+            onMarkupChange={setMarkup}
+            onTeChange={setTePercent}
+            onDiscountFlatChange={setDiscountFlat}
+            onMarkupFlatChange={setMarkupFlat}
+            onTeFlatChange={setTeFlat}
+            showProfitability={lineItems.length > 0}
+          />
 
           <div className="space-y-2">
             <Button className="w-full" variant="outline" onClick={() => handleSave('Draft')} disabled={!canSave}>Save as Draft</Button>

@@ -55,21 +55,28 @@ export interface BookTotals {
   grossMarginPct: number;
 }
 
+export interface FlatAssumptions {
+  discountFlat?: number;
+  markupFlat?: number;
+  teFlat?: number;
+}
+
 export function calcTotals(
   lineItems: LineItem[],
   discount: number,
   markup: number,
-  tePercent: number
+  tePercent: number,
+  flatAssumptions?: FlatAssumptions
 ): BookTotals {
   const subtotal = lineItems.reduce((s, i) => s + lineSubtotal(i), 0);
   const totalLineDays = lineItems.reduce((s, i) => s + totalDays(i), 0);
   const averageDailyRate = totalLineDays > 0 ? subtotal / totalLineDays : 0;
   const totalCost = lineItems.reduce((s, i) => s + lineCost(i), 0);
-  const discountAmount = subtotal * (discount / 100);
+  const discountAmount = flatAssumptions ? Math.min(flatAssumptions.discountFlat ?? 0, subtotal) : subtotal * (discount / 100);
   const afterDiscount = subtotal - discountAmount;
-  const markupAmount = afterDiscount * (markup / 100);
+  const markupAmount = flatAssumptions ? flatAssumptions.markupFlat ?? 0 : afterDiscount * (markup / 100);
   const afterMarkup = afterDiscount + markupAmount;
-  const teAmount = afterMarkup * (tePercent / 100);
+  const teAmount = flatAssumptions ? flatAssumptions.teFlat ?? 0 : afterMarkup * (tePercent / 100);
   const grandTotal = afterMarkup + teAmount;
   const grossMargin = afterMarkup - totalCost;
   const grossMarginPct = afterMarkup > 0 ? (grossMargin / afterMarkup) * 100 : 0;

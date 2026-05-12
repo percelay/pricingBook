@@ -23,6 +23,7 @@ export type RateMode = 'daily' | 'hourly';
 export type CurrencyMode = 'USD' | 'EUR';
 export type EmployeeGroup = 'CYB' | 'TECH' | 'BUS';
 export type PricingModel = 'fixed' | 'time-materials';
+export type PricingAssumptionMode = 'percent' | 'flat';
 
 export const HOURS_PER_DAY = 8;
 export const TARGET_MARGIN_PCT = 50;
@@ -109,9 +110,13 @@ export interface PricingBookData {
   selectedRateCardIds?: string[];
   pricingModel?: PricingModel;
   status: BookStatus;
+  pricingAssumptionMode?: PricingAssumptionMode;
   discount: number;
   markup: number;
   tePercent: number;
+  discountFlat?: number;
+  markupFlat?: number;
+  teFlat?: number;
   lineItems: LineItem[];
   showWeeklyAllocation?: boolean;
   phasedPricing?: PhasedPricingRow[];
