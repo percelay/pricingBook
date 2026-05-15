@@ -268,3 +268,40 @@ test('pricing sheet renders consultant rows with practice tags that mark US vs R
   assert.equal(sheet.getCell('S18').value, 'US Standard (US)');
   assert.equal(sheet.getCell('S19').value, 'France Standard (RoW)');
 });
+
+test('pricing workbook rate lookup only includes roles from selected rate cards', () => {
+  const selected = rateCard({
+    id: 'rc-selected',
+    name: 'Selected Card',
+    roles: [
+      { role: 'Consultant', dailyRate: 1500, dailyCost: 500 },
+    ],
+  });
+  const unselected = rateCard({
+    id: 'rc-unselected',
+    name: 'Unselected Card',
+    roles: [
+      { role: 'Partner', dailyRate: 5000, dailyCost: 1800 },
+    ],
+  });
+
+  const workbook = buildBookWorkbook(
+    book({
+      baseRateCardId: 'rc-selected',
+      baseRateCardName: 'Selected Card',
+      selectedRateCardIds: ['rc-selected'],
+      lineItems: [
+        line({ role: 'Consultant', rateCardId: 'rc-selected', rateCardName: 'Selected Card', rateCardRegion: 'US' }),
+      ],
+    }),
+    [selected, unselected]
+  );
+
+  const sheet = workbook.getWorksheet('Pricing');
+
+  assert.ok(sheet);
+  assert.equal(sheet.getCell('AA3').value, 'Selected Card|Consultant');
+  assert.equal(sheet.getCell('AA4').value, null);
+  assert.equal(sheet.getCell('AE3').value, 'Consultant');
+  assert.equal(sheet.getCell('AE4').value, null);
+});

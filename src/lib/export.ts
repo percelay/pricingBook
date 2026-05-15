@@ -102,6 +102,20 @@ function buildRateCardLookupRows(rateCards: RateCard[]): RateCardLookupRow[] {
   return rows;
 }
 
+function selectedRateCardsForWorkbook(book: PricingBook, rateCards: RateCard[]): RateCard[] {
+  const cardsById = new Map(rateCards.map(card => [card.id, card]));
+  const candidateIds = [
+    ...(book.selectedRateCardIds ?? []),
+    book.baseRateCardId,
+    ...book.lineItems.map(item => item.rateCardId),
+  ];
+  const selectedIds = Array.from(new Set(candidateIds.filter((id): id is string => typeof id === 'string' && cardsById.has(id))));
+
+  return selectedIds.length > 0
+    ? selectedIds.map(id => cardsById.get(id)).filter((card): card is RateCard => Boolean(card))
+    : rateCards;
+}
+
 function lineHrsPerWeek(item: LineItem): number {
   if (item.days.length === 0) return 0;
   const totalHrs = item.days.reduce((s, d) => s + d, 0) * 8;
@@ -822,6 +836,7 @@ function resolveExportOptions(book: PricingBook, options?: ExportOptions): Expor
 
 export function buildBookWorkbook(book: PricingBook, rateCards: RateCard[] = [], options?: ExportOptions): ExcelJS.Workbook {
   const resolvedOptions = resolveExportOptions(book, options);
+  const workbookRateCards = selectedRateCardsForWorkbook(book, rateCards);
   const workbook = new ExcelJS.Workbook();
   workbook.creator = 'probook';
   workbook.lastModifiedBy = 'probook';
@@ -832,7 +847,7 @@ export function buildBookWorkbook(book: PricingBook, rateCards: RateCard[] = [],
   workbook.calcProperties.fullCalcOnLoad = true;
   workbook.views = [{ x: 0, y: 0, width: 16000, height: 9000, firstSheet: 0, activeTab: 0, visibility: 'visible' }];
 
-  if (resolvedOptions.teamAndFee) addPricingSheet(workbook, book, rateCards);
+  if (resolvedOptions.teamAndFee) addPricingSheet(workbook, book, workbookRateCards);
   if (resolvedOptions.weeklyAllocation) addWeeklyAllocationSheet(workbook, book);
   if (resolvedOptions.phasedPricing) addPhasedPricingSheet(workbook, book);
   if (resolvedOptions.teamAndFee) addHandoffNotesSheet(workbook, book);
