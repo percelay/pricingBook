@@ -128,6 +128,12 @@ function linePractice(item: LineItem): string {
   return item.rateCardRegion === 'US' ? `${name} (US)` : `${name} (RoW)`;
 }
 
+function projectTypeLabel(book: PricingBook): string {
+  if (book.pricingModel === 'fixed') return 'Fixed Price';
+  if (book.pricingModel === 'time-materials') return 'T&E';
+  return '';
+}
+
 const CONSULTING_HEADER_ROW = 17;
 const CONSULTING_FIRST_DATA_ROW = 18;
 const CONSULTING_MAX_ROWS = 10;
@@ -259,6 +265,7 @@ function addPricingSheet(workbook: ExcelJS.Workbook, book: PricingBook, rateCard
   styleEditable(ws.getCell('B10'));
   ws.getCell('B11').value = book.engagement;
   styleEditable(ws.getCell('B11'));
+  ws.getCell('B12').value = projectTypeLabel(book);
   styleEditable(ws.getCell('B12'));
   styleEditable(ws.getCell('B13'), DATE_FORMAT);
   styleEditable(ws.getCell('C13'), DATE_FORMAT);

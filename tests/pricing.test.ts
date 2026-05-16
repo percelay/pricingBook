@@ -41,6 +41,7 @@ function book(overrides: Partial<PricingBook> = {}): PricingBook {
     region: overrides.region ?? 'US',
     baseRateCardId: overrides.baseRateCardId ?? 'rc-1',
     baseRateCardName: overrides.baseRateCardName ?? 'US Standard',
+    pricingModel: overrides.pricingModel,
     status: overrides.status ?? 'Draft',
     discount: overrides.discount ?? 0,
     markup: overrides.markup ?? 0,
@@ -304,4 +305,12 @@ test('pricing workbook rate lookup only includes roles from selected rate cards'
   assert.equal(sheet.getCell('AA4').value, null);
   assert.equal(sheet.getCell('AE3').value, 'Consultant');
   assert.equal(sheet.getCell('AE4').value, null);
+});
+
+test('pricing sheet project type reflects selected pricing model', () => {
+  const fixedWorkbook = buildBookWorkbook(book({ pricingModel: 'fixed' }));
+  const tmWorkbook = buildBookWorkbook(book({ pricingModel: 'time-materials' }));
+
+  assert.equal(fixedWorkbook.getWorksheet('Pricing')?.getCell('B12').value, 'Fixed Price');
+  assert.equal(tmWorkbook.getWorksheet('Pricing')?.getCell('B12').value, 'T&E');
 });
